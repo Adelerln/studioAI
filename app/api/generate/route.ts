@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     const replicateOutput = await replicateClient.run(replicateModel, {
       input: {
         prompt,
-        image_input: [inputPublicUrl]
+        image_input: [{ image: inputPublicUrl }]
       }
     });
 
