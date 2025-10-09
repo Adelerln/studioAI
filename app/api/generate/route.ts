@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { randomUUID } from 'crypto';
 import { Buffer } from 'node:buffer';
+import { writeFile, unlink } from 'node:fs/promises';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import Replicate from 'replicate';
@@ -23,7 +24,7 @@ const replicateModel = (process.env.REPLICATE_MODEL ?? 'google/nano-banana') as
   | `${string}/${string}`
   | `${string}/${string}:${string}`;
 
-const replicateClient = new Replicate({ auth: replicateToken });
+const replicateClient = new Replicate();
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,28 +76,18 @@ export async function POST(request: NextRequest) {
       data: { publicUrl: inputPublicUrl }
     } = supabaseAdmin.storage.from(inputBucket).getPublicUrl(inputPath);
 
-    const imageInputPayload = [
-      {
-        image: {
-          type: 'url',
-          url: inputPublicUrl
-        }
-      }
-    ];
-    console.log('[generate] replicate input', {
+    const input = {
       prompt,
-      image_input: imageInputPayload,
-      isArray: Array.isArray(imageInputPayload)
-    });
+      image_input: [inputPublicUrl]
+    };
 
-    const replicateOutput = await replicateClient.run(replicateModel, {
-      input: {
-        prompt,
-        image_input: imageInputPayload
-      }
-    });
+    const replicateOutput = await replicateClient.run(replicateModel, { input });
+    console.log('[generate] replicate input', input);
 
     const { buffer: generatedBuffer, contentType } = await normaliseReplicateOutput(replicateOutput);
+    const tmpFilePath = `/tmp/${randomUUID()}.png`;
+    await writeFile(tmpFilePath, generatedBuffer);
+
     const outputPath = `results/${randomUUID()}.png`;
 
     const { error: uploadOutputError } = await supabaseAdmin.storage
@@ -106,6 +97,8 @@ export async function POST(request: NextRequest) {
         cacheControl: '3600',
         upsert: false
       });
+
+    await unlink(tmpFilePath).catch(() => undefined);
 
     if (uploadOutputError) {
       throw new Error(`Erreur lors de l’upload du résultat : ${uploadOutputError.message}`);
