@@ -3,18 +3,18 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { randomUUID } from 'crypto';
 import { Buffer } from 'node:buffer';
 
-const inputBucket = process.env.SUPABASE_INPUT_BUCKET;
-const outputBucket = process.env.SUPABASE_OUTPUT_BUCKET;
-const replicateToken = process.env.REPLICATE_API_TOKEN;
-const replicateModel = process.env.REPLICATE_MODEL;
-
-if (!inputBucket || !outputBucket) {
-  throw new Error('Les buckets Supabase (SUPABASE_INPUT_BUCKET, SUPABASE_OUTPUT_BUCKET) doivent être définis.');
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`La variable d’environnement ${name} est manquante.`);
+  }
+  return value;
 }
 
-if (!replicateToken || !replicateModel) {
-  throw new Error('Les variables d’environnement REPLICATE_API_TOKEN et REPLICATE_MODEL sont requises.');
-}
+const inputBucket = requireEnv('SUPABASE_INPUT_BUCKET');
+const outputBucket = requireEnv('SUPABASE_OUTPUT_BUCKET');
+const replicateToken = requireEnv('REPLICATE_API_TOKEN');
+const replicateModel = requireEnv('REPLICATE_MODEL');
 
 const [modelId, modelVersion] = replicateModel.split(':');
 if (!modelId || !modelVersion) {
@@ -220,13 +220,13 @@ function extractImageUrl(result: ReplicateResult): string | null {
   }
 
   if (typeof result === 'object') {
-    return findUrlInObject(result);
+    return findUrlInObject(result as Record<string, unknown>);
   }
 
   return null;
 }
 
-function findUrlInObject(value: { [key: string]: unknown }): string | null {
+function findUrlInObject(value: Record<string, unknown>): string | null {
   for (const key of Object.keys(value)) {
     const entry = value[key];
     if (typeof entry === 'string' && entry.startsWith('http')) {
