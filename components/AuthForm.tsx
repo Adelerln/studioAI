@@ -16,7 +16,7 @@ interface FormState {
 }
 
 export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, supabase } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -26,6 +26,25 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const redirectTo = useMemo(() => searchParams.get('redirectedFrom') ?? '/dashboard', [searchParams]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/dashboard` }
+      });
+      if (error) {
+        setError(error.message);
+        setSubmitting(false);
+      }
+    } catch {
+      setError("La connexion avec Google a échoué. Veuillez réessayer.");
+      setSubmitting(false);
+    }
+  }, [supabase]);
 
   const handleModeChange = useCallback(
     (nextMode: AuthMode) => {
@@ -132,7 +151,16 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
         >
           Inscription
         </button>
-      </div>
+    </div>
+
+      <button
+        type="button"
+        style={styles.googleButton}
+        onClick={handleGoogleSignIn}
+        disabled={submitting}
+      >
+        Continuer avec Google
+      </button>
 
       <form style={styles.form} onSubmit={handleSubmit} noValidate>
         <div style={styles.field}>
@@ -207,6 +235,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1rem',
     cursor: 'pointer',
     transition: 'background-color 0.2s ease, color 0.2s ease'
+  },
+  googleButton: {
+    border: '1px solid rgba(148, 163, 184, 0.6)',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    fontWeight: 600,
+    fontSize: '1rem',
+    cursor: 'pointer',
+    backgroundColor: '#fff',
+    color: '#0f172a',
+    transition: 'background-color 0.2s ease',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '8px'
   },
   form: {
     display: 'flex',

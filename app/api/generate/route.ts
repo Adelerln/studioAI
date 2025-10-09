@@ -78,11 +78,13 @@ export async function POST(request: NextRequest) {
 
     const input = {
       prompt,
-      image_input: [inputPublicUrl]
-    };
+      image_input: {
+        toJSON: () => [inputPublicUrl]
+      }
+    } as const;
 
     const replicateOutput = await replicateClient.run(replicateModel, { input });
-    console.log('[generate] replicate input', input);
+    console.log('[generate] replicate input', JSON.stringify(input));
 
     const { buffer: generatedBuffer, contentType } = await normaliseReplicateOutput(replicateOutput);
     const tmpFilePath = `/tmp/${randomUUID()}.png`;
