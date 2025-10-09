@@ -75,10 +75,24 @@ export async function POST(request: NextRequest) {
       data: { publicUrl: inputPublicUrl }
     } = supabaseAdmin.storage.from(inputBucket).getPublicUrl(inputPath);
 
+    const imageInputPayload = [
+      {
+        image: {
+          type: 'url',
+          url: inputPublicUrl
+        }
+      }
+    ];
+    console.log('[generate] replicate input', {
+      prompt,
+      image_input: imageInputPayload,
+      isArray: Array.isArray(imageInputPayload)
+    });
+
     const replicateOutput = await replicateClient.run(replicateModel, {
       input: {
         prompt,
-        image_input: [{ image: inputPublicUrl }]
+        image_input: imageInputPayload
       }
     });
 
