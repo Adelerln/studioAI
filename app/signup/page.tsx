@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthForm } from '@/components/AuthForm';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +17,9 @@ export default function SignupPage() {
 
   return (
     <section style={styles.wrapper}>
-      <AuthForm initialMode="signup" />
+      <Suspense fallback={<div>Chargement…</div>}>
+        <AuthForm initialMode="signup" />
+      </Suspense>
     </section>
   );
 }
