@@ -3,13 +3,16 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { navigationLinks } from '@/data/marketing';
 
 export function Header() {
   const { user, signOut, loading } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  const showMarketingNav = useMemo(() => pathname === '/', [pathname]);
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
@@ -21,15 +24,25 @@ export function Header() {
     router.replace('/');
   }, [router, signOut]);
 
-  const showAuthLinks = !loading && !user && pathname !== '/signup';
+  const showAuthLinks = !loading && !user;
 
   return (
     <header style={styles.wrapper}>
       <Link href="/" style={styles.brand}>
-        Studio IA Photo
+        <span style={{ fontWeight: 800 }}>Studio</span>
+        <span style={{ color: '#2563eb', marginLeft: 4 }}>AI</span>
       </Link>
 
       <nav style={styles.nav}>
+        {showMarketingNav && (
+          <div style={styles.primaryLinks}>
+            {navigationLinks.map((item) => (
+              <a key={item.label} href={item.href} style={styles.navLink}>
+                {item.label}
+              </a>
+            ))}
+          </div>
+        )}
         {user ? (
           <div style={styles.session}>
             <span style={styles.email}>{user.email}</span>
@@ -40,11 +53,11 @@ export function Header() {
         ) : (
           showAuthLinks && (
             <div style={styles.links}>
-              <Link href="/login" style={styles.link}>
-                Connexion
+              <Link href="/contact" style={styles.secondaryCta}>
+                Request a demo
               </Link>
-              <Link href="/signup" style={{ ...styles.link, ...styles.cta }}>
-                Inscription
+              <Link href="/login" style={{ ...styles.link, ...styles.cta }}>
+                Sign in
               </Link>
             </div>
           )
@@ -59,11 +72,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '18px 32px',
+    padding: '18px clamp(20px, 4vw, 48px)',
     position: 'sticky',
     top: 0,
-    background: 'rgba(255,255,255,0.8)',
-    backdropFilter: 'blur(12px)',
+    background: 'rgba(255,255,255,0.9)',
+    backdropFilter: 'blur(18px)',
     borderBottom: '1px solid rgba(148,163,184,0.25)',
     zIndex: 10
   },
@@ -75,7 +88,18 @@ const styles: Record<string, React.CSSProperties> = {
   nav: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px'
+    gap: '28px'
+  },
+  primaryLinks: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '18px'
+  },
+  navLink: {
+    fontSize: '0.95rem',
+    fontWeight: 500,
+    color: '#475569',
+    padding: '8px 0'
   },
   links: {
     display: 'flex',
@@ -86,10 +110,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     padding: '8px 14px',
     borderRadius: '999px',
-    border: '1px solid rgba(99,102,241,0.4)'
+    border: '1px solid rgba(59,130,246,0.4)'
+  },
+  secondaryCta: {
+    padding: '10px 18px',
+    borderRadius: '999px',
+    border: '1px solid rgba(15,23,42,0.08)',
+    backgroundColor: '#fff',
+    fontWeight: 600,
+    color: 'rgba(15, 23, 42, 0.62)',
+    backdropFilter: 'blur(6px)'
   },
   cta: {
-    background: 'linear-gradient(135deg, #6366f1, #0ea5e9)',
+    background: 'linear-gradient(135deg, #2563eb, #6366f1)',
     color: '#fff',
     border: 'none'
   },
