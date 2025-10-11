@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { heroContent } from '@/data/marketing';
+import { Button } from '@/components/ui';
+import { heroContent } from '@/features/landing/constants';
 
 export function HeroSection() {
   return (
@@ -11,12 +12,9 @@ export function HeroSection() {
         <h1 style={styles.heading}>{heroContent.title}</h1>
         <p style={styles.subtitle}>{heroContent.subtitle}</p>
         <div style={styles.actions}>
-          <Link href={heroContent.primaryCta.href} style={{ ...styles.button, ...styles.primary }}>
-            {heroContent.primaryCta.label}
-          </Link>
-          <Link href={heroContent.secondaryCta.href} style={{ ...styles.button, ...styles.secondary }}>
-            {heroContent.secondaryCta.label}
-          </Link>
+          <Button asChild className="rounded-full px-7 py-3 text-base">
+            <Link href={heroContent.primaryCta.href}>{heroContent.primaryCta.label}</Link>
+          </Button>
         </div>
       </div>
 
@@ -53,7 +51,7 @@ export function HeroSection() {
                   <div style={{ ...styles.canvasCard, backgroundColor: '#0f172a', color: '#fff' }}>
                     <span style={styles.cardTitle}>Prompt</span>
                     <p style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>
-                      Génère un portrait artistique inspiré des codes éditoriaux des magazines lifestyle.
+                      Generate an editorial portrait inspired by modern lifestyle magazines.
                     </p>
                   </div>
                   <div style={styles.canvasCard}>
@@ -114,23 +112,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '16px'
-  },
-  button: {
-    padding: '14px 26px',
-    borderRadius: '999px',
-    fontWeight: 600,
-    fontSize: '1rem',
-    border: '1px solid transparent'
-  },
-  primary: {
-    background: 'linear-gradient(135deg, #2563eb, #6366f1)',
-    color: '#fff',
-    boxShadow: '0 18px 45px -26px rgba(37, 99, 235, 0.8)'
-  },
-  secondary: {
-    borderColor: 'rgba(15,23,42,0.12)',
-    color: '#0f172a',
-    backgroundColor: 'rgba(255,255,255,0.85)'
   },
   media: {
     position: 'relative',

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCallback, useMemo, useState } from 'react';
-import { navigationLinks } from '@/data/marketing';
+import { navigationLinks } from '@/features/landing/constants';
 
 export function Header() {
   const { user, signOut, loading } = useAuth();
@@ -47,17 +47,17 @@ export function Header() {
           <div style={styles.session}>
             <span style={styles.email}>{user.email}</span>
             <button onClick={handleSignOut} style={styles.signOut} disabled={signingOut}>
-              {signingOut ? 'Déconnexion…' : 'Déconnexion'}
+              {signingOut ? 'Signing out…' : 'Sign out'}
             </button>
           </div>
         ) : (
           showAuthLinks && (
             <div style={styles.links}>
-              <Link href="/contact" style={styles.secondaryCta}>
-                Request a demo
+              <Link href="/login" style={{ ...styles.link, ...styles.primaryCta }}>
+                log in
               </Link>
-              <Link href="/login" style={{ ...styles.link, ...styles.cta }}>
-                Sign in
+              <Link href="/signup" style={{ ...styles.link, ...styles.secondaryCta }}>
+                sign up
               </Link>
             </div>
           )
@@ -108,23 +108,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   link: {
     fontWeight: 600,
-    padding: '8px 14px',
-    borderRadius: '999px',
-    border: '1px solid rgba(59,130,246,0.4)'
-  },
-  secondaryCta: {
     padding: '10px 18px',
     borderRadius: '999px',
-    border: '1px solid rgba(15,23,42,0.08)',
-    backgroundColor: '#fff',
-    fontWeight: 600,
-    color: 'rgba(15, 23, 42, 0.62)',
-    backdropFilter: 'blur(6px)'
+    border: '1px solid transparent',
+    textTransform: 'none'
   },
-  cta: {
+  primaryCta: {
     background: 'linear-gradient(135deg, #2563eb, #6366f1)',
-    color: '#fff',
-    border: 'none'
+    color: '#fff'
+  },
+  secondaryCta: {
+    borderColor: 'rgba(15,23,42,0.12)',
+    color: '#0f172a',
+    backgroundColor: '#fff',
+    boxShadow: '0 10px 30px -25px rgba(15,23,42,0.6)'
   },
   session: {
     display: 'flex',

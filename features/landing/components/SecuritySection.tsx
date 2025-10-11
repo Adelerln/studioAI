@@ -1,16 +1,16 @@
 'use client';
 
-import { securityPillars } from '@/data/marketing';
+import { securityPillars } from '@/features/landing/constants';
 
 export function SecuritySection() {
   return (
     <section id="security" style={styles.wrapper}>
       <header style={styles.intro}>
         <span style={styles.eyebrow}>Security & compliance</span>
-        <h2 style={styles.heading}>Conçu pour les équipes soumis aux exigences les plus strictes</h2>
+        <h2 style={styles.heading}>Built for teams with the highest compliance needs</h2>
         <p style={styles.subheading}>
-          Déléguez vos flux créatifs à l’IA tout en respectant vos processus de gouvernance. Studio AI s’intègre à
-          votre stack et répond aux politiques de sécurité d’entreprise.
+          Offload creative workflows to AI while meeting governance requirements. Studio AI fits into your stack and
+          respects enterprise security policies out of the box.
         </p>
       </header>
 

@@ -1,25 +1,31 @@
 'use client';
 
-import { featureCards } from '@/data/marketing';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { featureCards } from '@/features/landing/constants';
 
 export function FeatureCardsSection() {
   return (
-    <section id="solutions" style={styles.wrapper}>
+    <section id="features" style={styles.wrapper}>
       <div style={styles.header}>
         <span style={styles.eyebrow}>Capabilities</span>
-        <h2 style={styles.heading}>Créez, évaluez et déployez vos expériences IA au même endroit</h2>
+        <h2 style={styles.heading}>Design, evaluate, and deploy your AI experiences in one place</h2>
         <p style={styles.description}>
-          Studio AI assemble les meilleurs modèles, vos données propriétaires et des outils de collaboration pour
-          livrer un processus créatif complet.
+          Studio AI brings together leading models, your proprietary data, and collaborative tooling to deliver an
+          end-to-end creative process.
         </p>
       </div>
       <div style={styles.grid}>
         {featureCards.map((card) => (
-          <article key={card.id} style={{ ...styles.card, boxShadow: styles.cardBoxShadow }}>
-            <div style={{ ...styles.cardAccent, background: card.accent }} />
-            <h3 style={styles.cardTitle}>{card.title}</h3>
-            <p style={styles.cardDescription}>{card.description}</p>
-          </article>
+          <Card key={card.id} className="min-h-[220px] rounded-2xl">
+            <CardHeader className="flex flex-row items-start gap-4">
+              <div style={{ ...styles.cardAccent, background: card.accent }} />
+              <div>
+                <CardTitle>{card.title}</CardTitle>
+                <CardDescription>{card.description}</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent />
+          </Card>
         ))}
       </div>
     </section>
@@ -63,33 +69,9 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
     gap: '24px'
   },
-  card: {
-    position: 'relative',
-    borderRadius: '28px',
-    padding: '32px',
-    backgroundColor: '#fff',
-    border: '1px solid rgba(203,213,225,0.45)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '18px',
-    minHeight: 220
-  },
-  cardBoxShadow: '0 18px 80px -50px rgba(15,23,42, 0.6)',
   cardAccent: {
     width: 48,
     height: 48,
     borderRadius: '16px'
-  },
-  cardTitle: {
-    margin: 0,
-    fontSize: '1.3rem',
-    fontWeight: 700,
-    color: '#0f172a'
-  },
-  cardDescription: {
-    margin: 0,
-    fontSize: '1rem',
-    lineHeight: 1.7,
-    color: 'rgba(15,23,42,0.65)'
   }
 };

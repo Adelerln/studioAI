@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
-import { Header } from '@/components/Header';
+import { Header } from '@/components/layout';
 
 export const metadata: Metadata = {
-  title: 'Resacolo Studio | IA Image Editor',
-  description: 'Téléchargez une image, décrivez le rendu souhaité et laissez l’IA transformer votre visuel.'
+  title: 'Resacolo Studio | AI Image Editor',
+  description: 'Upload an image, describe the desired output, and let AI transform your visual.'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body>
         <AuthProvider>
           <Header />

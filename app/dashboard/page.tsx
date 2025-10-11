@@ -16,7 +16,7 @@ interface Project {
 type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export default function DashboardPage() {
-  const { supabase, user, loading } = useAuth();
+  const { supabase, user, loading, signOut } = useAuth();
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<{ state: GenerationStatus; message?: string }>({ state: 'idle' });
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,7 +43,7 @@ export default function DashboardPage() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      setProjectsError('Impossible de récupérer vos projets pour le moment.');
+      setProjectsError('Unable to retrieve your projects right now.');
     } else {
       setProjects(data ?? []);
     }
@@ -82,15 +83,15 @@ export default function DashboardPage() {
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (!file) {
-        setStatus({ state: 'error', message: 'Sélectionnez une image à transformer.' });
+        setStatus({ state: 'error', message: 'Select an image to transform.' });
         return;
       }
       if (!prompt.trim()) {
-        setStatus({ state: 'error', message: 'Décrivez le rendu souhaité dans le champ texte.' });
+        setStatus({ state: 'error', message: 'Describe the desired output in the text area.' });
         return;
       }
 
-      setStatus({ state: 'loading', message: 'Génération en cours…' });
+      setStatus({ state: 'loading', message: 'Generating…' });
 
       try {
         const formData = new FormData();
@@ -104,7 +105,7 @@ export default function DashboardPage() {
 
         if (!response.ok) {
           const errorPayload = await response.json().catch(() => ({}));
-          throw new Error(errorPayload?.message ?? 'La génération a échoué.');
+          throw new Error(errorPayload?.message ?? 'Generation failed.');
         }
 
         setPrompt('');
@@ -116,7 +117,7 @@ export default function DashboardPage() {
           return null;
         });
 
-        setStatus({ state: 'success', message: 'Image générée avec succès.' });
+        setStatus({ state: 'success', message: 'Image generated successfully.' });
         await loadProjects();
       } catch (error) {
         console.error('[generate] error', error);
@@ -143,7 +144,7 @@ export default function DashboardPage() {
 
         if (!response.ok) {
           const errorPayload = await response.json().catch(() => ({}));
-          throw new Error(errorPayload?.message ?? 'La suppression a échoué.');
+          throw new Error(errorPayload?.message ?? 'Delete failed.');
         }
 
         setProjects((current) => current.filter((project) => project.id !== projectId));
@@ -160,10 +161,22 @@ export default function DashboardPage() {
     []
   );
 
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true);
+    const { error } = await signOut();
+    setSigningOut(false);
+    if (error) {
+      console.error('[signOut] error', error);
+      setStatus({ state: 'error', message: 'Sign out failed. Please try again.' });
+      return;
+    }
+    router.replace('/');
+  }, [router, signOut]);
+
   return (
     <div style={styles.layout}>
       <section style={styles.panel}>
-        <h1 style={styles.title}>Nouvelle génération</h1>
+        <h1 style={styles.title}>New generation</h1>
         <form style={styles.form} onSubmit={handleSubmit}>
           <label htmlFor="file" style={styles.label}>
             Image source
@@ -177,10 +190,10 @@ export default function DashboardPage() {
               onChange={handleFileChange}
             />
             {previewUrl ? (
-              <img src={previewUrl} alt="Prévisualisation" style={styles.preview} />
+              <img src={previewUrl} alt="Preview" style={styles.preview} />
             ) : (
               <span style={{ color: '#64748b' }}>
-                Glissez-déposez une image ou cliquez pour parcourir vos fichiers.
+                Drag and drop an image or click to browse your files.
               </span>
             )}
           </label>
@@ -194,7 +207,7 @@ export default function DashboardPage() {
             onChange={(event) => setPrompt(event.target.value)}
             style={styles.textarea}
             rows={4}
-            placeholder="Décrivez précisément votre rendu final."
+            placeholder="Describe the final result you expect."
           />
 
           {status.state !== 'idle' && (
@@ -214,29 +227,29 @@ export default function DashboardPage() {
           )}
 
           <button type="submit" style={styles.submit} disabled={!canSubmit || status.state === 'loading'}>
-            {status.state === 'loading' ? 'Génération…' : 'Lancer la génération'}
+            {status.state === 'loading' ? 'Generating…' : 'Start generation'}
           </button>
         </form>
       </section>
 
       <section style={styles.gallery}>
-        <h2 style={styles.galleryTitle}>Mes projets</h2>
+        <h2 style={styles.galleryTitle}>My projects</h2>
         {loadingProjects ? (
-          <p style={styles.empty}>Chargement en cours…</p>
+          <p style={styles.empty}>Loading…</p>
         ) : projectsError ? (
           <p style={{ ...styles.empty, color: '#ef4444' }}>{projectsError}</p>
         ) : projects.length === 0 ? (
-          <p style={styles.empty}>Aucun projet pour le moment. Lancez votre première génération !</p>
+          <p style={styles.empty}>No project yet. Launch your first generation!</p>
         ) : (
           <div style={styles.cards}>
             {projects.map((project) => (
               <article key={project.id} style={styles.card}>
                 <div style={styles.images}>
                   {project.input_image_url && (
-                    <img src={project.input_image_url} alt="Image d'origine" style={styles.image} />
+                    <img src={project.input_image_url} alt="Original image" style={styles.image} />
                   )}
                   {project.output_image_url && (
-                    <img src={project.output_image_url} alt="Résultat IA" style={styles.image} />
+                    <img src={project.output_image_url} alt="AI result" style={styles.image} />
                   )}
                 </div>
                 <p style={styles.prompt}>{project.prompt}</p>
@@ -252,11 +265,18 @@ export default function DashboardPage() {
                     style={styles.delete}
                     disabled={deletingId === project.id}
                   >
-                    {deletingId === project.id ? 'Suppression…' : 'Supprimer'}
+                    {deletingId === project.id ? 'Deleting…' : 'Delete'}
                   </button>
                 </div>
               </article>
             ))}
+          </div>
+        )}
+        {user && (
+          <div style={styles.logoutRow}>
+            <button onClick={handleSignOut} style={styles.logout} disabled={signingOut}>
+              {signingOut ? 'Signing out…' : 'Sign out'}
+            </button>
           </div>
         )}
       </section>
@@ -404,6 +424,21 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#fff',
     color: '#ef4444',
     fontWeight: 600,
+    cursor: 'pointer'
+  },
+  logoutRow: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginTop: '12px'
+  },
+  logout: {
+    borderRadius: '999px',
+    border: 'none',
+    padding: '12px 20px',
+    fontWeight: 600,
+    color: '#fff',
+    background: 'linear-gradient(135deg, #fda4af, #c084fc)',
+    boxShadow: '0 25px 60px -40px rgba(240, 149, 171, 0.55)',
     cursor: 'pointer'
   }
 };

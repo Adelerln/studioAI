@@ -1,6 +1,6 @@
-# Resacolo IA Image Studio
+# Resacolo AI Image Studio
 
-Application Next.js permettant de transformer des images grâce au modèle Replicate et de stocker les résultats dans Supabase.
+Next.js application that transforms images with the Replicate model and stores results in Supabase.
 
 ## Installation
 
@@ -9,16 +9,16 @@ npm install
 npm run dev
 ```
 
-Toutes les dépendances sont définies dans `package.json`. Les scripts disponibles :
+All dependencies are listed in `package.json`. Available scripts:
 
-- `npm run dev` – lance le serveur de développement
-- `npm run build` – génère la version de production
-- `npm run start` – démarre le serveur Next.js en production
-- `npm run lint` – exécute ESLint (configuration Next.js par défaut)
+- `npm run dev` – start the development server
+- `npm run build` – create the production build
+- `npm run start` – run the production server
+- `npm run lint` – run ESLint (Next.js default config)
 
 ## Configuration
 
-Les variables indispensables sont déjà renseignées dans `.env.local`. Pour les modifier :
+Required variables are defined in `.env.local`. Update them as needed:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
@@ -32,12 +32,12 @@ REPLICATE_MODEL=google/nano-banana:1bwy6kt8r9rm80crx16t6161tm..
 
 ## Architecture
 
-- `app/page.tsx` : interface principale avec upload, prompt et affichage du rendu.
-- `app/api/generate/route.ts` : API serverless recevant l’image & le prompt, gérant les uploads dans Supabase, la génération Replicate et l’enregistrement en base.
-- `lib/supabase-admin.ts` : client Supabase (service role) pour les opérations serveur.
+- `app/page.tsx`: landing interface with upload, prompt, and output rendering.
+- `app/api/generate/route.ts`: serverless API that stores the source image in Supabase, calls Replicate, and saves the result.
+- `lib/supabase-admin.ts`: Supabase client (service role) for server-side operations.
 
-Le bucket `input-images` accueille les fichiers d’origine, le bucket `output-images` enregistre les visuels générés. La table `projects` mémorise chaque transformation.
+The `input-images` bucket stores source files, `output-images` stores generated visuals, and the `projects` table tracks each run.
 
-## Sécurité
+## Security
 
-L’API exploite la clé « service role ». Ne déployez jamais ce fichier sans mesures supplémentaires (variables d’environnement privées, RLS, etc.).
+The API uses the service role key. Never ship this file without additional safeguards (private environment variables, RLS, etc.).

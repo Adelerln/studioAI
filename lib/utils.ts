@@ -1,0 +1,13 @@
+/**
+ * Merge class names utility, inspired by the shadcn/ui `cn` helper.
+ */
+export function cn(...inputs: Array<string | undefined | null | false>) {
+  return inputs.filter(Boolean).join(' ');
+}
+
+/**
+ * No-op sleep helper for simulating network latency in feature demos.
+ */
+export async function sleep(milliseconds: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+}

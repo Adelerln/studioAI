@@ -5,26 +5,24 @@ import { Buffer } from 'node:buffer';
 import { writeFile, unlink } from 'node:fs/promises';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import Replicate from 'replicate';
+import { runReplicateModel } from '@/services/replicate';
 
 export const runtime = 'nodejs';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`La variable d’environnement ${name} est manquante.`);
+    throw new Error(`Environment variable ${name} is missing.`);
   }
   return value;
 }
 
 const inputBucket = requireEnv('SUPABASE_INPUT_BUCKET');
 const outputBucket = requireEnv('SUPABASE_OUTPUT_BUCKET');
-const replicateToken = requireEnv('REPLICATE_API_TOKEN');
+requireEnv('REPLICATE_API_TOKEN');
 const replicateModel = (process.env.REPLICATE_MODEL ?? 'google/nano-banana') as
   | `${string}/${string}`
   | `${string}/${string}:${string}`;
-
-const replicateClient = new Replicate();
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
     const supabaseAdmin = createSupabaseAdminClient();
@@ -50,11 +48,11 @@ export async function POST(request: NextRequest) {
     const prompt = formData.get('prompt');
 
     if (!(image instanceof File)) {
-      return NextResponse.json({ message: 'Aucune image reçue.' }, { status: 400 });
+      return NextResponse.json({ message: 'No image received.' }, { status: 400 });
     }
 
     if (typeof prompt !== 'string' || !prompt.trim()) {
-      return NextResponse.json({ message: 'Le prompt est requis.' }, { status: 400 });
+      return NextResponse.json({ message: 'Prompt is required.' }, { status: 400 });
     }
 
     const inputPath = `uploads/${randomUUID()}-${image.name}`;
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadInputError) {
-      throw new Error(`Erreur lors de l’upload de l’image source : ${uploadInputError.message}`);
+      throw new Error(`Failed to upload source image: ${uploadInputError.message}`);
     }
 
     const {
@@ -83,7 +81,7 @@ export async function POST(request: NextRequest) {
       }
     } as const;
 
-    const replicateOutput = await replicateClient.run(replicateModel, { input });
+    const replicateOutput = await runReplicateModel({ model: replicateModel, input });
     console.log('[generate] replicate input', JSON.stringify(input));
 
     const { buffer: generatedBuffer, contentType } = await normaliseReplicateOutput(replicateOutput);
@@ -103,7 +101,7 @@ export async function POST(request: NextRequest) {
     await unlink(tmpFilePath).catch(() => undefined);
 
     if (uploadOutputError) {
-      throw new Error(`Erreur lors de l’upload du résultat : ${uploadOutputError.message}`);
+      throw new Error(`Failed to upload generated image: ${uploadOutputError.message}`);
     }
 
     const {
@@ -130,7 +128,7 @@ export async function POST(request: NextRequest) {
         ? error.message
         : typeof error === 'object' && error && 'message' in error
         ? String((error as { message?: unknown }).message)
-        : 'Une erreur interne est survenue pendant la génération.';
+        : 'An internal error occurred during generation.';
     return NextResponse.json({ message }, { status: 500 });
   }
 }
@@ -139,7 +137,7 @@ async function normaliseReplicateOutput(
   output: unknown
 ): Promise<{ buffer: Buffer; contentType?: string | null }> {
   if (!output) {
-    throw new Error('Réponse vide reçue de Replicate.');
+    throw new Error('Empty response received from Replicate.');
   }
 
   // Handle modern output object with helper methods.
@@ -184,13 +182,13 @@ async function normaliseReplicateOutput(
     return { buffer: Buffer.from(output.buffer) };
   }
 
-  throw new Error('Format de sortie Replicate non pris en charge.');
+  throw new Error('Unsupported Replicate output format.');
 }
 
 async function downloadToBuffer(url: string): Promise<{ buffer: Buffer; contentType?: string | null }> {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Téléchargement de la sortie Replicate échoué : ${response.statusText}`);
+    throw new Error(`Failed to download Replicate output: ${response.statusText}`);
   }
   return {
     buffer: Buffer.from(await response.arrayBuffer()),

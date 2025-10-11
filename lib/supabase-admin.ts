@@ -11,7 +11,7 @@ export function createSupabaseAdminClient() {
     resolveEnv('SUPABASE_SERVICE_ROLE_KEY') ?? resolveEnv('SUPABASE_SERVICE_KEY');
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase URL ou clé de service manquante dans la configuration.');
+    throw new Error('Supabase URL or service role key missing from configuration.');
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {

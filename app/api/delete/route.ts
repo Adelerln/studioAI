@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`La variable d’environnement ${name} est manquante.`);
+    throw new Error(`Environment variable ${name} is missing.`);
   }
   return value;
 }
@@ -29,12 +29,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
     const payload = (await request.json().catch(() => ({}))) as { id?: string };
     if (!payload.id) {
-      return NextResponse.json({ message: 'Identifiant de projet manquant.' }, { status: 400 });
+      return NextResponse.json({ message: 'Project identifier is required.' }, { status: 400 });
     }
 
     const { data: project, error: projectError } = await supabase
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!project) {
-      return NextResponse.json({ message: 'Projet introuvable.' }, { status: 404 });
+      return NextResponse.json({ message: 'Project not found.' }, { status: 404 });
     }
 
     const admin = createSupabaseAdminClient();
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     for (const { bucket, key } of deletions) {
       const { error } = await admin.storage.from(bucket).remove([key]);
       if (error && error.message !== 'Object not found') {
-        throw new Error(`Suppression du fichier ${key} échouée : ${error.message}`);
+        throw new Error(`Failed to delete file ${key}: ${error.message}`);
       }
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         message:
           error instanceof Error
             ? error.message
-            : 'Une erreur interne est survenue pendant la suppression.'
+            : 'An internal error occurred during deletion.'
       },
       { status: 500 }
     );

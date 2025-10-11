@@ -41,7 +41,7 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
         setSubmitting(false);
       }
     } catch {
-      setError("La connexion avec Google a échoué. Veuillez réessayer.");
+      setError('Google sign-in failed. Please try again.');
       setSubmitting(false);
     }
   }, [supabase]);
@@ -70,10 +70,10 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
   const validate = useCallback((): string | null => {
     const emailPattern = /\S+@\S+\.\S+/;
     if (!emailPattern.test(form.email)) {
-      return 'Veuillez saisir une adresse email valide.';
+      return 'Please enter a valid email address.';
     }
     if (form.password.length < 8) {
-      return 'Le mot de passe doit contenir au moins 8 caractères.';
+      return 'Password must contain at least 8 characters.';
     }
     return null;
   }, [form.email, form.password]);
@@ -112,9 +112,7 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
       }
 
       if (!data.session) {
-        setSuccess(
-          'Inscription réussie ! Vérifiez vos emails pour confirmer votre compte.'
-        );
+        setSuccess('Sign-up successful! Check your inbox to confirm your account.');
         setSubmitting(false);
         return;
       }
@@ -137,7 +135,7 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
           }}
           disabled={submitting}
         >
-          Connexion
+          Log In
         </button>
         <button
           type="button"
@@ -149,17 +147,12 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
           }}
           disabled={submitting}
         >
-          Inscription
+          Sign Up
         </button>
-    </div>
+      </div>
 
-      <button
-        type="button"
-        style={styles.googleButton}
-        onClick={handleGoogleSignIn}
-        disabled={submitting}
-      >
-        Continuer avec Google
+      <button type="button" style={styles.googleButton} onClick={handleGoogleSignIn} disabled={submitting}>
+        Continue with Google
       </button>
 
       <form style={styles.form} onSubmit={handleSubmit} noValidate>
@@ -175,13 +168,13 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
             value={form.email}
             onChange={handleInputChange}
             style={styles.input}
-            placeholder="votre@email.com"
+            placeholder="you@example.com"
             disabled={submitting}
           />
         </div>
         <div style={styles.field}>
           <label style={styles.label} htmlFor="password">
-            Mot de passe
+            Password
           </label>
           <input
             id="password"
@@ -200,7 +193,7 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
         {success && <p style={{ ...styles.feedback, color: '#16a34a' }}>{success}</p>}
 
         <button type="submit" style={styles.submit} disabled={submitting}>
-          {submitting ? 'Chargement…' : mode === 'login' ? 'Se connecter' : "S'inscrire"}
+          {submitting ? 'Loading…' : mode === 'login' ? 'Log In' : 'Create account'}
         </button>
       </form>
     </div>

@@ -1,15 +1,15 @@
 'use client';
 
-import { useCasesColumns } from '@/data/marketing';
+import { useCasesColumns } from '@/features/landing/constants';
 
 export function UseCasesSection() {
   return (
-    <section id="developers" style={styles.wrapper}>
+    <section id="use-cases" style={styles.wrapper}>
       <header style={styles.intro}>
-        <h2 style={styles.heading}>Quel agent allez-vous créer aujourd&apos;hui ?</h2>
+        <h2 style={styles.heading}>Which agent will you launch today?</h2>
         <p style={styles.subtitle}>
-          Bibliothèque d’agents prêts à l’emploi pour vos équipes. Personnalisez les prompts, connectez vos sources de
-          données et partagez en interne ou via API.
+          Ready-to-use agents for every team. Customize prompts, connect your data sources, and share internally or via
+          API.
         </p>
       </header>
       <div style={styles.columns}>
@@ -56,7 +56,7 @@ const styles: Record<string, React.CSSProperties> = {
   heading: {
     margin: 0,
     fontSize: 'clamp(2.4rem, 4vw, 3.2rem)',
-    fontFamily: "'Manrope','Inter',sans-serif'",
+    fontFamily: "'Manrope','Inter',sans-serif",
     lineHeight: 1.15
   },
   subtitle: {

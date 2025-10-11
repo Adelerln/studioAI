@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthForm } from '@/components/AuthForm';
+import { AuthForm } from '@/features/auth/components/AuthForm';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
