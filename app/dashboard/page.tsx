@@ -84,6 +84,10 @@ export default function DashboardPage() {
       console.error('[subscription] fetch error', error);
       setSubscriptionError('Impossible de récupérer votre abonnement.');
     } else {
+      console.log('[subscription] fetch success', {
+        hasServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+        hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_KEY)
+      });
       setSubscription(data ?? null);
     }
     setLoadingSubscription(false);

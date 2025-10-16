@@ -21,6 +21,11 @@ export async function fetchSubscriptionForUser(
   userId: string
 ): Promise<PostgrestSingleResponse<SubscriptionRecord | null>> {
   const supabaseAdmin = createSupabaseAdminClient();
+  console.info('[subscriptions] fetchSubscriptionForUser', {
+    userId,
+    hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_KEY)
+  });
   return supabaseAdmin
     .from('subscriptions')
     .select('*')
