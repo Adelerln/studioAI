@@ -76,11 +76,15 @@ export async function POST(request: NextRequest) {
       data: { publicUrl: inputPublicUrl }
     } = supabaseAdmin.storage.from(inputBucket).getPublicUrl(inputPath);
 
+    console.log('[generate] input upload', {
+      bucket: inputBucket,
+      path: inputPath,
+      publicUrl: inputPublicUrl
+    });
+
     const input = {
       prompt,
-      image_input: {
-        toJSON: () => [inputPublicUrl]
-      }
+      image: inputPublicUrl
     } as const;
 
     const {
@@ -136,8 +140,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('[generate] replicate input', input);
     const replicateOutput = await runReplicateModel({ model: replicateModel, input });
-    console.log('[generate] replicate input', JSON.stringify(input));
 
     const { buffer: generatedBuffer, contentType } = await normaliseReplicateOutput(replicateOutput);
     const tmpFilePath = `/tmp/${randomUUID()}.png`;
