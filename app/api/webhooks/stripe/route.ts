@@ -28,6 +28,11 @@ function toIso(epochSeconds: number | null | undefined): string | null {
   return new Date(epochSeconds * 1000).toISOString();
 }
 
+type LegacySubscription = Stripe.Subscription & {
+  current_period_start?: number | null;
+  current_period_end?: number | null;
+};
+
 async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   const stripe = getStripeClient();
   const supabaseAdmin = createSupabaseAdminClient();
@@ -70,17 +75,21 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   }
 
   const priceId = subscription.items.data[0]?.price?.id ?? null;
+  const legacy = subscription as LegacySubscription;
+  const currentPeriodStart = legacy.current_period_start ?? null;
+  const currentPeriodEnd = legacy.current_period_end ?? null;
+
   const updates = {
     stripe_customer_id: customerId,
     stripe_subscription_id: subscription.id,
     stripe_price_id: priceId,
     status: subscription.status,
-    current_period_start: toIso(subscription.current_period_start),
-    current_period_end: toIso(subscription.current_period_end),
+    current_period_start: toIso(currentPeriodStart),
+    current_period_end: toIso(currentPeriodEnd),
     quota_limit: resolveQuotaLimit(priceId)
   };
 
-  if (shouldResetUsage(existingRecord?.current_period_start ?? null, subscription.current_period_start ?? 0)) {
+  if (shouldResetUsage(existingRecord?.current_period_start ?? null, currentPeriodStart ?? 0)) {
     Object.assign(updates, { quota_used: 0 });
   }
 
@@ -98,8 +107,8 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
       stripe_customer_id: customerId,
       stripe_subscription_id: subscription.id,
       stripe_price_id: priceId,
-      current_period_start: toIso(subscription.current_period_start),
-      current_period_end: toIso(subscription.current_period_end),
+      current_period_start: toIso(currentPeriodStart),
+      current_period_end: toIso(currentPeriodEnd),
       quota_limit: resolveQuotaLimit(priceId),
       quota_used: 0
     }
@@ -128,10 +137,11 @@ async function handleCheckoutSession(session: Stripe.Checkout.Session) {
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  const subscriptionDetails = invoice.parent?.subscription_details ?? null;
   const subscriptionId =
-    typeof invoice.subscription === 'string'
-      ? invoice.subscription
-      : invoice.subscription?.id ?? null;
+    typeof subscriptionDetails?.subscription === 'string'
+      ? subscriptionDetails.subscription
+      : subscriptionDetails?.subscription?.id ?? null;
   const customerId =
     typeof invoice.customer === 'string'
       ? invoice.customer
@@ -152,9 +162,9 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     return;
   }
 
-  const subscriptionItem = invoice.lines.data[0];
-  const period = subscriptionItem?.period;
-  const priceId = subscriptionItem?.price?.id ?? null;
+  const subscriptionItem = invoice.lines.data[0] ?? null;
+  const period = subscriptionItem?.period ?? null;
+  const priceId = subscriptionItem?.pricing?.price_details?.price ?? null;
 
   await upsertSubscriptionForUser(
     existing.user_id,

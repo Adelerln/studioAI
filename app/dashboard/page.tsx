@@ -117,11 +117,6 @@ export default function DashboardPage() {
     setStatus({ state: 'idle' });
   }, []);
 
-  const canSubmit = useMemo(
-    () => Boolean(file && prompt.trim().length > 0 && !quotaSummary.quotaReached),
-    [file, prompt, quotaSummary.quotaReached]
-  );
-
   const quotaSummary = useMemo(() => {
     const status = subscription?.status ?? 'free';
     const planKey = ACTIVE_SUBSCRIPTION_STATUSES.has(status) && subscription?.stripe_price_id
@@ -138,6 +133,11 @@ export default function DashboardPage() {
       quotaReached: quotaUsed >= quotaLimit
     };
   }, [subscription]);
+
+  const canSubmit = useMemo(
+    () => Boolean(file && prompt.trim().length > 0 && !quotaSummary.quotaReached),
+    [file, prompt, quotaSummary.quotaReached]
+  );
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {

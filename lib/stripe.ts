@@ -19,7 +19,7 @@ let stripeInstance: Stripe | null = null;
 export function getStripeClient(): Stripe {
   if (!stripeInstance) {
     stripeInstance = new Stripe(requireEnv('STRIPE_SECRET_KEY'), {
-      apiVersion: '2024-06-20',
+      apiVersion: '2025-09-30.clover',
       appInfo: {
         name: 'Replicate Image Editor',
         url: 'https://replicate.com'
