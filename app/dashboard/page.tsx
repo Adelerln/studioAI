@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { FREE_TIER_QUOTA, PLAN_DETAILS } from '@/constants/subscriptions';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
@@ -27,8 +27,23 @@ type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due']);
 
 export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: '48px', textAlign: 'center' }}>
+          <p style={{ fontSize: '1rem', color: '#475569' }}>Chargement du tableau de bord…</p>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const { supabase, user, loading, signOut } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -42,6 +57,8 @@ export default function DashboardPage() {
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
+  const [checkoutProcessing, setCheckoutProcessing] = useState(false);
+  const [checkoutHandled, setCheckoutHandled] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -84,10 +101,6 @@ export default function DashboardPage() {
       console.error('[subscription] fetch error', error);
       setSubscriptionError('Impossible de récupérer votre abonnement.');
     } else {
-      console.log('[subscription] fetch success', {
-        hasServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-        hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_KEY)
-      });
       setSubscription(data ?? null);
     }
     setLoadingSubscription(false);
@@ -99,6 +112,46 @@ export default function DashboardPage() {
       loadSubscription();
     }
   }, [loadProjects, loadSubscription, loading, user]);
+
+  useEffect(() => {
+    if (!user || checkoutHandled || checkoutProcessing) {
+      return;
+    }
+
+    const checkoutStatus = searchParams?.get('checkout');
+    const sessionId = searchParams?.get('session_id');
+
+    if (checkoutStatus === 'success' && sessionId) {
+      setCheckoutProcessing(true);
+      fetch('/api/stripe/checkout/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ sessionId })
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload?.message ?? 'Unable to finalise your subscription.');
+          }
+          setStatus({ state: 'success', message: 'Votre abonnement a été activé.' });
+          await loadSubscription();
+          setCheckoutHandled(true);
+          router.replace('/dashboard');
+        })
+        .catch((error) => {
+          console.error('[checkout] finalise error', error);
+          setStatus({
+            state: 'error',
+            message: error instanceof Error ? error.message : 'Échec de l’activation de votre abonnement.'
+          });
+        })
+        .finally(() => {
+          setCheckoutProcessing(false);
+        });
+    }
+  }, [checkoutHandled, checkoutProcessing, loadSubscription, router, searchParams, user]);
 
   useEffect(() => {
     return () => {

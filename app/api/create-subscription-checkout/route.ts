@@ -95,7 +95,9 @@ export async function POST(request: NextRequest) {
     }
 
     const publicUrl = requirePublicUrl();
-    const successUrl = `${publicUrl}/dashboard`;
+    const successUrl = new URL('/dashboard', publicUrl);
+    successUrl.searchParams.set('checkout', 'success');
+    successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
     const cancelUrl = `${publicUrl}/pricing`;
 
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
       customer: customerId,
       billing_address_collection: 'auto',
       allow_promotion_codes: true,
-      success_url: successUrl,
+      success_url: successUrl.toString(),
       cancel_url: cancelUrl,
       line_items: [
         {
