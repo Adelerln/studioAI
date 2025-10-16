@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { FREE_TIER_QUOTA, PLAN_DETAILS } from '@/constants/subscriptions';
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 
 interface Project {
   id: string;
@@ -13,7 +15,16 @@ interface Project {
   created_at: string;
 }
 
+interface SubscriptionSummary {
+  status: string | null;
+  stripe_price_id: string | null;
+  quota_limit: number | null;
+  quota_used: number | null;
+}
+
 type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
+
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due']);
 
 export default function DashboardPage() {
   const { supabase, user, loading, signOut } = useAuth();
@@ -27,6 +38,10 @@ export default function DashboardPage() {
   const [status, setStatus] = useState<{ state: GenerationStatus; message?: string }>({ state: 'idle' });
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [billingPortalLoading, setBillingPortalLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -50,11 +65,36 @@ export default function DashboardPage() {
     setLoadingProjects(false);
   }, [supabase]);
 
+  const loadSubscription = useCallback(async () => {
+    if (!user) {
+      setSubscription(null);
+      setLoadingSubscription(false);
+      return;
+    }
+
+    setSubscriptionError(null);
+    setLoadingSubscription(true);
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('status,stripe_price_id,quota_limit,quota_used')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[subscription] fetch error', error);
+      setSubscriptionError('Impossible de récupérer votre abonnement.');
+    } else {
+      setSubscription(data ?? null);
+    }
+    setLoadingSubscription(false);
+  }, [supabase, user]);
+
   useEffect(() => {
     if (!loading && user) {
       loadProjects();
+      loadSubscription();
     }
-  }, [loadProjects, loading, user]);
+  }, [loadProjects, loadSubscription, loading, user]);
 
   useEffect(() => {
     return () => {
@@ -77,11 +117,35 @@ export default function DashboardPage() {
     setStatus({ state: 'idle' });
   }, []);
 
-  const canSubmit = useMemo(() => file && prompt.trim().length > 0, [file, prompt]);
+  const canSubmit = useMemo(
+    () => Boolean(file && prompt.trim().length > 0 && !quotaSummary.quotaReached),
+    [file, prompt, quotaSummary.quotaReached]
+  );
+
+  const quotaSummary = useMemo(() => {
+    const status = subscription?.status ?? 'free';
+    const planKey = ACTIVE_SUBSCRIPTION_STATUSES.has(status) && subscription?.stripe_price_id
+      ? subscription.stripe_price_id
+      : 'free';
+    const plan = PLAN_DETAILS[planKey] ?? PLAN_DETAILS.free;
+    const quotaLimit = subscription?.quota_limit ?? plan.quota ?? FREE_TIER_QUOTA;
+    const quotaUsed = subscription?.quota_used ?? 0;
+    return {
+      status,
+      planKey,
+      quotaLimit,
+      quotaUsed,
+      quotaReached: quotaUsed >= quotaLimit
+    };
+  }, [subscription]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      if (quotaSummary.quotaReached) {
+        setStatus({ state: 'error', message: 'Quota atteint, passez au plan Pro.' });
+        return;
+      }
       if (!file) {
         setStatus({ state: 'error', message: 'Select an image to transform.' });
         return;
@@ -118,7 +182,7 @@ export default function DashboardPage() {
         });
 
         setStatus({ state: 'success', message: 'Image generated successfully.' });
-        await loadProjects();
+        await Promise.all([loadProjects(), loadSubscription()]);
       } catch (error) {
         console.error('[generate] error', error);
         setStatus({
@@ -127,7 +191,7 @@ export default function DashboardPage() {
         });
       }
     },
-    [file, loadProjects, prompt]
+    [file, loadProjects, loadSubscription, prompt, quotaSummary.quotaReached]
   );
 
   const handleDelete = useCallback(
@@ -161,6 +225,38 @@ export default function DashboardPage() {
     []
   );
 
+  const handleOpenBillingPortal = useCallback(async () => {
+    setBillingPortalLoading(true);
+    try {
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST'
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as { url?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Impossible d’ouvrir le portail de facturation.');
+      }
+
+      if (!payload?.url) {
+        throw new Error('Lien du portail client manquant.');
+      }
+
+      window.location.assign(payload.url);
+    } catch (error) {
+      console.error('[billing-portal] error', error);
+      setStatus({
+        state: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Impossible de charger le portail de facturation pour le moment.'
+      });
+    } finally {
+      setBillingPortalLoading(false);
+    }
+  }, []);
+
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     const { error } = await signOut();
@@ -176,6 +272,21 @@ export default function DashboardPage() {
   return (
     <div style={styles.layout}>
       <section style={styles.panel}>
+        <SubscriptionStatus
+          status={subscription?.status ?? null}
+          priceId={subscription?.stripe_price_id ?? null}
+          quotaLimit={quotaSummary.quotaLimit}
+          quotaUsed={quotaSummary.quotaUsed}
+          loading={loadingSubscription}
+          error={subscriptionError}
+          onManage={handleOpenBillingPortal}
+          manageDisabled={billingPortalLoading}
+        />
+
+        {quotaSummary.quotaReached && (
+          <p style={styles.quotaWarning}>Quota atteint, passez au plan Pro.</p>
+        )}
+
         <h1 style={styles.title}>New generation</h1>
         <form style={styles.form} onSubmit={handleSubmit}>
           <label htmlFor="file" style={styles.label}>
@@ -300,6 +411,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '20px'
+  },
+  quotaWarning: {
+    margin: 0,
+    fontWeight: 600,
+    color: '#b91c1c'
   },
   title: {
     margin: 0,

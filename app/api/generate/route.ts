@@ -6,6 +6,8 @@ import { writeFile, unlink } from 'node:fs/promises';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { runReplicateModel } from '@/services/replicate';
+import { FREE_TIER_QUOTA } from '@/lib/stripe';
+import { hasActiveSubscription, resolveQuotaLimit } from '@/services/subscriptions';
 
 export const runtime = 'nodejs';
 
@@ -81,6 +83,59 @@ export async function POST(request: NextRequest) {
       }
     } as const;
 
+    const {
+      data: subscription,
+      error: subscriptionError
+    } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      throw subscriptionError;
+    }
+
+    let quotaUsed = subscription?.quota_used ?? 0;
+    let quotaLimit = FREE_TIER_QUOTA;
+
+    if (subscription) {
+      const expectedQuota = hasActiveSubscription(subscription.status)
+        ? resolveQuotaLimit(subscription.stripe_price_id)
+        : FREE_TIER_QUOTA;
+      quotaLimit = expectedQuota;
+
+      if ((subscription.quota_limit ?? FREE_TIER_QUOTA) !== expectedQuota) {
+        await supabaseAdmin
+          .from('subscriptions')
+          .update({ quota_limit: expectedQuota })
+          .eq('user_id', user.id);
+      }
+    } else {
+      await supabaseAdmin
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          status: 'free',
+          quota_limit: FREE_TIER_QUOTA,
+          quota_used: 0
+        })
+        .select()
+        .maybeSingle();
+      quotaUsed = 0;
+      quotaLimit = FREE_TIER_QUOTA;
+    }
+
+    if (quotaUsed >= quotaLimit) {
+      return NextResponse.json(
+        {
+          message:
+            "Vous avez atteint votre quota de générations pour ce cycle. Passez à un plan supérieur pour augmenter votre limite."
+        },
+        { status: 402 }
+      );
+    }
+
     const replicateOutput = await runReplicateModel({ model: replicateModel, input });
     console.log('[generate] replicate input', JSON.stringify(input));
 
@@ -118,6 +173,19 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       throw insertError;
+    }
+
+    const nextUsage = quotaUsed + 1;
+    const { error: usageUpdateError } = await supabaseAdmin
+      .from('subscriptions')
+      .update({
+        quota_used: nextUsage,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (usageUpdateError) {
+      throw usageUpdateError;
     }
 
     return NextResponse.json({ imageUrl: outputPublicUrl });

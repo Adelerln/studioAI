@@ -11,3 +11,12 @@ export function cn(...inputs: Array<string | undefined | null | false>) {
 export async function sleep(milliseconds: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 }
+
+export function resolveSiteUrl(options?: { origin?: string | null; fallback?: string }) {
+  const { origin, fallback } = options ?? {};
+  const envUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+  return origin ?? envUrl ?? fallback ?? 'http://localhost:3000';
+}
