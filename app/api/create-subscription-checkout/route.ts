@@ -21,16 +21,21 @@ function requirePublicUrl(): string {
   return value.replace(/\/$/, '');
 }
 
-const VALID_PRICE_IDS = new Set([STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID]);
+const VALID_PRICE_IDS = new Set([STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID].filter(Boolean));
 
 function assertValidPriceId(priceId: string | undefined): string {
   if (!priceId) {
     throw new Error('A price identifier is required.');
   }
-  if (!VALID_PRICE_IDS.has(priceId)) {
+  const normalized = priceId.trim();
+  if (!VALID_PRICE_IDS.has(normalized)) {
+    console.error('[create-subscription-checkout] invalid price id', {
+      received: normalized,
+      valid: Array.from(VALID_PRICE_IDS)
+    });
     throw new Error('Unknown price identifier.');
   }
-  return priceId;
+  return normalized;
 }
 
 export async function POST(request: NextRequest) {
@@ -51,6 +56,7 @@ export async function POST(request: NextRequest) {
 
     const payload = (await request.json().catch(() => ({}))) as CheckoutPayload;
     console.info('[create-subscription-checkout] incoming payload', payload);
+    console.info('[create-subscription-checkout] valid price ids', Array.from(VALID_PRICE_IDS));
     const priceId = assertValidPriceId(payload.priceId);
     console.info('[create-subscription-checkout] validated price id', priceId);
     const stripe = getStripeClient();
