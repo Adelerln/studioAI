@@ -11,6 +11,10 @@ export function createSupabaseAdminClient() {
     resolveEnv('SUPABASE_SERVICE_ROLE_KEY') ?? resolveEnv('SUPABASE_SERVICE_KEY');
 
   if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[supabase-admin] Missing configuration', {
+      hasUrl: Boolean(supabaseUrl),
+      hasServiceRole: Boolean(serviceRoleKey)
+    });
     throw new Error('Supabase URL or service role key missing from configuration.');
   }
 

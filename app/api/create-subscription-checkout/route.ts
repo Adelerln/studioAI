@@ -52,7 +52,22 @@ export async function POST(request: NextRequest) {
     const payload = (await request.json().catch(() => ({}))) as CheckoutPayload;
     const priceId = assertValidPriceId(payload.priceId);
     const stripe = getStripeClient();
-    const { data: subscription } = await fetchSubscriptionForUser(user.id);
+    console.info('[create-subscription-checkout] environment check', {
+      hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.length),
+      hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_KEY?.length),
+      supabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.length)
+    });
+    const { data: subscription, error: subscriptionError } = await fetchSubscriptionForUser(user.id);
+
+    if (subscriptionError) {
+      console.error('[create-subscription-checkout] supabase fetch error', {
+        message: subscriptionError.message,
+        details: subscriptionError.details,
+        hint: subscriptionError.hint,
+        code: subscriptionError.code
+      });
+      throw subscriptionError;
+    }
 
     let customerId = subscription?.stripe_customer_id ?? null;
 
@@ -105,12 +120,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {
     console.error('[create-subscription-checkout] error', error);
-    const message =
-      error instanceof Stripe.errors.StripeError
-        ? error.message
-        : error instanceof Error
-        ? error.message
-        : 'Unable to create a subscription checkout session.';
-    return NextResponse.json({ message }, { status: 400 });
+    let message = 'Unable to create a subscription checkout session.';
+    if (error instanceof Stripe.errors.StripeError) {
+      message = error.message;
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
+
+    return NextResponse.json(
+      {
+        message,
+        debug:
+          error && typeof error === 'object'
+            ? { name: (error as { name?: string }).name, ...(error as { code?: string; hint?: string }) }
+            : undefined
+      },
+      { status: 400 }
+    );
   }
 }
