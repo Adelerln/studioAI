@@ -9,7 +9,7 @@ export const STRIPE_BASIC_PRICE_ID = resolvePublicEnv(
 );
 export const STRIPE_PRO_PRICE_ID = resolvePublicEnv(
   'NEXT_PUBLIC_STRIPE_PRO_PRICE_ID',
-  'price_1SIqa1Lm8HeEccYQoSkKzdMk'
+  'price_1SIqaALm8HeEccYQoLI1UXGk'
 );
 
 export const FREE_TIER_QUOTA = 10;
