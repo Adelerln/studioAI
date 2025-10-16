@@ -1,4 +1,7 @@
-export const navigationLinks = [{ label: 'Product', href: '#product' }];
+export const navigationLinks = [
+  { label: 'Product', href: '#product' },
+  { label: 'Pricing', href: '/pricing' }
+];
 
 type Cta = { label: string; href: string };
 
@@ -17,6 +20,7 @@ export const heroContent: HeroContent = {
   subtitle:
     'Prototype, validate, and deploy AI-powered visual experiences in minutes. Connect your data, orchestrate the best models, and ship results that meet creative direction standards.',
   primaryCta: { label: 'Get started', href: '/signup' },
+  secondaryCta: { label: 'Voir les offres', href: '/pricing' },
   mediaCaption: 'Collaborative workspace — Studio AI flow preview'
 };
 

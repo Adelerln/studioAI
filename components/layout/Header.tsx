@@ -36,11 +36,17 @@ export function Header() {
       <nav style={styles.nav}>
         {showMarketingNav && (
           <div style={styles.primaryLinks}>
-            {navigationLinks.map((item) => (
-              <a key={item.label} href={item.href} style={styles.navLink}>
-                {item.label}
-              </a>
-            ))}
+            {navigationLinks.map((item) =>
+              item.href.startsWith('#') ? (
+                <a key={item.label} href={item.href} style={styles.navLink}>
+                  {item.label}
+                </a>
+              ) : (
+                <Link key={item.label} href={item.href} style={styles.navLink}>
+                  {item.label}
+                </Link>
+              )
+            )}
           </div>
         )}
         {user ? (

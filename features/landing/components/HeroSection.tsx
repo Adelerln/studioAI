@@ -15,6 +15,11 @@ export function HeroSection() {
           <Button asChild className="rounded-full px-7 py-3 text-base">
             <Link href={heroContent.primaryCta.href}>{heroContent.primaryCta.label}</Link>
           </Button>
+          {heroContent.secondaryCta && (
+            <Link href={heroContent.secondaryCta.href} style={styles.secondaryAction}>
+              {heroContent.secondaryCta.label}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -112,6 +117,15 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '16px'
+  },
+  secondaryAction: {
+    borderRadius: '999px',
+    border: '1px solid rgba(15,23,42,0.15)',
+    padding: '12px 22px',
+    fontWeight: 600,
+    color: '#0f172a',
+    backgroundColor: '#fff',
+    boxShadow: '0 20px 45px -35px rgba(15,23,42,0.45)'
   },
   media: {
     position: 'relative',
