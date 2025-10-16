@@ -5,11 +5,11 @@ function resolvePublicEnv(name: string, fallback: string): string {
 
 export const STRIPE_BASIC_PRICE_ID = resolvePublicEnv(
   'NEXT_PUBLIC_STRIPE_BASIC_PRICE_ID',
-  'price_1SIqRxLm8HeEccYQxPFjeTlh'
+  'price_1SIwbtLRm8CqJ4igBs7NqkFw'
 );
 export const STRIPE_PRO_PRICE_ID = resolvePublicEnv(
   'NEXT_PUBLIC_STRIPE_PRO_PRICE_ID',
-  'price_1SIqaALm8HeEccYQoLI1UXGk'
+  'price_1SIwcALRm8CqJ4igmUICsEcB'
 );
 
 export const FREE_TIER_QUOTA = 10;
