@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = (await request.json().catch(() => ({}))) as CheckoutPayload;
+    console.info('[create-subscription-checkout] incoming payload', payload);
     const priceId = assertValidPriceId(payload.priceId);
+    console.info('[create-subscription-checkout] validated price id', priceId);
     const stripe = getStripeClient();
     console.info('[create-subscription-checkout] environment check', {
       hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.length),
