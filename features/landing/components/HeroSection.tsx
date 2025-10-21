@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui';
 import { heroContent } from '@/features/landing/constants';
 
 export function HeroSection() {
@@ -12,9 +11,6 @@ export function HeroSection() {
         <h1 style={styles.heading}>{heroContent.title}</h1>
         <p style={styles.subtitle}>{heroContent.subtitle}</p>
         <div style={styles.actions}>
-          <Button asChild className="rounded-full px-7 py-3 text-base">
-            <Link href={heroContent.primaryCta.href}>{heroContent.primaryCta.label}</Link>
-          </Button>
           {heroContent.secondaryCta && (
             <Link href={heroContent.secondaryCta.href} style={styles.secondaryAction}>
               {heroContent.secondaryCta.label}

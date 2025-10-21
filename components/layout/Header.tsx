@@ -51,6 +51,9 @@ export function Header() {
             )}
           </div>
         )}
+        <Link href="/dashboard" style={styles.studioButton}>
+          Accès au studio
+        </Link>
         {user ? (
           <div style={styles.session}>
             {isAdmin ? (
@@ -107,6 +110,14 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '18px'
+  },
+  studioButton: {
+    fontWeight: 600,
+    padding: '10px 20px',
+    borderRadius: '999px',
+    background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
+    color: '#fff',
+    boxShadow: '0 20px 45px -35px rgba(79,70,229,0.6)'
   },
   navLink: {
     fontSize: '0.95rem',
