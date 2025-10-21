@@ -36,6 +36,9 @@ export function Header() {
       </Link>
 
       <nav style={styles.nav}>
+        <Link href="/dashboard" style={styles.navLink}>
+          Accès au studio
+        </Link>
         {showMarketingNav && (
           <div style={styles.primaryLinks}>
             {navigationLinks.map((item) =>
@@ -51,9 +54,6 @@ export function Header() {
             )}
           </div>
         )}
-        <Link href="/dashboard" style={styles.navLink}>
-          Accès au studio
-        </Link>
         {user ? (
           <div style={styles.session}>
             {isAdmin ? (
