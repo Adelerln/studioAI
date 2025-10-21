@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCallback, useMemo, useState } from 'react';
 import { navigationLinks } from '@/features/landing/constants';
+import { isAdminUser } from '@/lib/admin';
 
 export function Header() {
   const { user, signOut, loading } = useAuth();
@@ -13,6 +14,7 @@ export function Header() {
   const pathname = usePathname();
 
   const showMarketingNav = useMemo(() => pathname === '/', [pathname]);
+  const isAdmin = useMemo(() => isAdminUser(user ?? null), [user]);
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
@@ -51,6 +53,11 @@ export function Header() {
         )}
         {user ? (
           <div style={styles.session}>
+            {isAdmin ? (
+              <Link href="/dashboard/admin" style={styles.adminLink}>
+                Admin
+              </Link>
+            ) : null}
             <span style={styles.email}>{user.email}</span>
             <button onClick={handleSignOut} style={styles.signOut} disabled={signingOut}>
               {signingOut ? 'Signing out…' : 'Sign out'}
@@ -133,6 +140,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '16px'
+  },
+  adminLink: {
+    fontWeight: 600,
+    color: '#2563eb'
   },
   email: {
     fontWeight: 500,

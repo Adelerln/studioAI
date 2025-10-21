@@ -100,6 +100,11 @@ export async function POST(request: NextRequest) {
       throw subscriptionError;
     }
 
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
+    const userMetadata = (authUser?.user?.user_metadata ?? {}) as Record<string, unknown>;
+    let referralCredits = Number(userMetadata.referral_credits ?? 0) || 0;
+    let usingReferralCredit = false;
+
     let quotaUsed = subscription?.quota_used ?? 0;
     let quotaLimit = FREE_TIER_QUOTA;
 
@@ -131,13 +136,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (quotaUsed >= quotaLimit) {
-      return NextResponse.json(
-        {
-          message:
-            "Vous avez atteint votre quota de générations pour ce cycle. Passez à un plan supérieur pour augmenter votre limite."
-        },
-        { status: 402 }
-      );
+      if (referralCredits > 0) {
+        usingReferralCredit = true;
+        referralCredits -= 1;
+      } else {
+        return NextResponse.json(
+          {
+            message:
+              'Vous avez atteint votre quota de générations pour ce cycle. Passez au plan Basic pour augmenter votre limite.'
+          },
+          { status: 402 }
+        );
+      }
     }
 
     console.log('[generate] replicate input', input);
@@ -190,6 +200,19 @@ export async function POST(request: NextRequest) {
 
     if (usageUpdateError) {
       throw usageUpdateError;
+    }
+
+    if (usingReferralCredit) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          user_metadata: {
+            ...userMetadata,
+            referral_credits: referralCredits
+          }
+        });
+      } catch (referralUpdateError) {
+        console.error('[generate] unable to decrement referral credits', referralUpdateError);
+      }
     }
 
     return NextResponse.json({ imageUrl: outputPublicUrl });

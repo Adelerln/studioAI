@@ -7,6 +7,11 @@ import { PricingCard } from '@/components/PricingCard';
 import { STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID, PLAN_DETAILS } from '@/constants/subscriptions';
 
 const FEATURES = {
+  free: [
+    '5 générations par mois',
+    'Accès aux modèles standards',
+    'Historique de vos créations'
+  ],
   [STRIPE_BASIC_PRICE_ID]: [
     '50 générations par mois',
     'Accès aux modèles standards',
@@ -101,6 +106,18 @@ export default function PricingPage() {
       </section>
 
       <section style={styles.grid}>
+        <PricingCard
+          title="Plan Free"
+          price={PLAN_DETAILS.free.priceLabel}
+          description={PLAN_DETAILS.free.description}
+          quota={PLAN_DETAILS.free.quota}
+          features={FEATURES.free}
+          ctaLabel={user ? 'Inclus dans votre compte' : 'Créer un compte gratuit'}
+          onSubscribe={() =>
+            user ? router.push('/dashboard') : router.push('/signup?redirect=/dashboard')
+          }
+          disabled={authLoading || Boolean(user)}
+        />
         {plans.map(({ id, label, plan }) => (
           <PricingCard
             key={id}

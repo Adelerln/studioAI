@@ -62,8 +62,8 @@ export function SubscriptionStatus({
             {plan.label} · {plan.priceLabel}
           </p>
           <p style={styles.quota}>
-            {planKey === 'free' ? 'Plan Essentiel' : `Plan ${plan.label}`} - {remaining}/{quotaLimit} générations
-            restantes ce mois
+            {planKey === 'free' ? 'Plan Free' : `Plan ${plan.label}`} - {remaining}/{quotaLimit} générations restantes
+            ce mois
           </p>
           <div style={styles.track}>
             <div

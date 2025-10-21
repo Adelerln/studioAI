@@ -51,6 +51,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Project not found.' }, { status: 404 });
     }
 
+    if (project.user_id !== user.id) {
+      return NextResponse.json({ message: 'Unauthorized.' }, { status: 403 });
+    }
+
     const admin = createSupabaseAdminClient();
 
     const deletions: Array<{ bucket: string; key: string }> = [];

@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { FREE_TIER_QUOTA, PLAN_DETAILS } from '@/constants/subscriptions';
+import { FREE_TIER_QUOTA, PLAN_DETAILS, STRIPE_PRO_PRICE_ID } from '@/constants/subscriptions';
+import { REFERRAL_REWARD_BONUS } from '@/constants/referrals';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 
 interface Project {
@@ -18,6 +20,7 @@ interface Project {
 interface SubscriptionSummary {
   status: string | null;
   stripe_price_id: string | null;
+  stripe_subscription_id: string | null;
   quota_limit: number | null;
   quota_used: number | null;
 }
@@ -25,6 +28,13 @@ interface SubscriptionSummary {
 type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due']);
+
+interface ReferralInfo {
+  code: string;
+  credits: number;
+  shareUrl: string;
+  referredBy: string | null;
+}
 
 export default function DashboardPage() {
   return (
@@ -59,6 +69,12 @@ function DashboardContent() {
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
   const [checkoutProcessing, setCheckoutProcessing] = useState(false);
   const [checkoutHandled, setCheckoutHandled] = useState(false);
+  const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
+  const [loadingReferral, setLoadingReferral] = useState(false);
+  const [referralError, setReferralError] = useState<string | null>(null);
+  const [referralMessage, setReferralMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [upgradingPlan, setUpgradingPlan] = useState(false);
+  const [upgradeFeedback, setUpgradeFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -91,27 +107,93 @@ function DashboardContent() {
 
     setSubscriptionError(null);
     setLoadingSubscription(true);
+
+    try {
     const { data, error } = await supabase
       .from('subscriptions')
-      .select('status,stripe_price_id,quota_limit,quota_used')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .select('status,stripe_price_id,stripe_subscription_id,quota_limit,quota_used')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    if (error) {
-      console.error('[subscription] fetch error', error);
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setSubscription(data);
+        return;
+      }
+
+      const ensureResponse = await fetch('/api/subscriptions/ensure', {
+        method: 'POST'
+      });
+
+      if (!ensureResponse.ok) {
+        const payload = await ensureResponse.json().catch(() => ({}));
+        throw new Error(payload?.message ?? 'Impossible de préparer votre plan gratuit.');
+      }
+
+      const { data: ensured, error: ensuredError } = await supabase
+        .from('subscriptions')
+        .select('status,stripe_price_id,stripe_subscription_id,quota_limit,quota_used')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (ensuredError) {
+        throw ensuredError;
+      }
+
+      setSubscription(ensured ?? null);
+    } catch (subscriptionError) {
+      console.error('[subscription] fetch error', subscriptionError);
+      setSubscription(null);
       setSubscriptionError('Impossible de récupérer votre abonnement.');
-    } else {
-      setSubscription(data ?? null);
+    } finally {
+      setLoadingSubscription(false);
     }
-    setLoadingSubscription(false);
   }, [supabase, user]);
+
+  const loadReferralInfo = useCallback(async () => {
+    if (!user) {
+      setReferralInfo(null);
+      return;
+    }
+    setReferralError(null);
+    setLoadingReferral(true);
+    try {
+      const response = await fetch('/api/referrals/code');
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.message ?? 'Impossible de récupérer votre code de parrainage.');
+      }
+      const payload = (await response.json()) as { code: string; credits: number; referredBy: string | null };
+      const origin =
+        typeof window !== 'undefined'
+          ? window.location.origin.replace(/\/$/, '')
+          : (process.env.NEXT_PUBLIC_URL ?? '').replace(/\/$/, '');
+      setReferralInfo({
+        code: payload.code,
+        credits: payload.credits ?? 0,
+        referredBy: payload.referredBy ?? null,
+        shareUrl: origin ? `${origin}/signup?ref=${payload.code}` : `/signup?ref=${payload.code}`
+      });
+    } catch (error) {
+      console.error('[referral] fetch error', error);
+      setReferralError(
+        error instanceof Error ? error.message : 'Impossible de récupérer votre code de parrainage.'
+      );
+    } finally {
+      setLoadingReferral(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!loading && user) {
       loadProjects();
       loadSubscription();
+      loadReferralInfo();
     }
-  }, [loadProjects, loadSubscription, loading, user]);
+  }, [loadProjects, loadReferralInfo, loadSubscription, loading, user]);
 
   useEffect(() => {
     if (!user || checkoutHandled || checkoutProcessing) {
@@ -161,6 +243,43 @@ function DashboardContent() {
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    if (!user || typeof window === 'undefined') {
+      return;
+    }
+    const pending = localStorage.getItem('pending-referral-code');
+    if (!pending) {
+      return;
+    }
+    const resolveReferral = async () => {
+      try {
+        const response = await fetch('/api/referrals/claim', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ code: pending })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok) {
+          setReferralMessage({ type: 'success', text: 'Bonus parrainage appliqué à votre compte.' });
+          await loadReferralInfo();
+        } else {
+          setReferralMessage({
+            type: 'error',
+            text: payload?.message ?? 'Impossible de valider votre parrainage.'
+          });
+        }
+      } catch (error) {
+        console.error('[referral] claim error', error);
+        setReferralMessage({ type: 'error', text: 'Impossible de valider votre parrainage.' });
+      } finally {
+        localStorage.removeItem('pending-referral-code');
+      }
+    };
+    resolveReferral();
+  }, [loadReferralInfo, user]);
+
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
 
@@ -191,6 +310,33 @@ function DashboardContent() {
     };
   }, [subscription]);
 
+  const showUpgradeToPro = useMemo(() => {
+    if (!subscription) {
+      return false;
+    }
+    if (!subscription.stripe_subscription_id) {
+      return false;
+    }
+    if (subscription.stripe_price_id === STRIPE_PRO_PRICE_ID) {
+      return false;
+    }
+    return ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status ?? '');
+  }, [subscription]);
+
+  const showQuotaReminder = useMemo(() => {
+    if (!subscription) {
+      return false;
+    }
+    const limit = quotaSummary.quotaLimit;
+    if (!limit || limit <= 0) {
+      return false;
+    }
+    if (quotaSummary.quotaReached) {
+      return false;
+    }
+    return quotaSummary.quotaUsed / limit >= 0.8;
+  }, [quotaSummary.quotaLimit, quotaSummary.quotaReached, quotaSummary.quotaUsed, subscription]);
+
   const canSubmit = useMemo(
     () => Boolean(file && prompt.trim().length > 0 && !quotaSummary.quotaReached),
     [file, prompt, quotaSummary.quotaReached]
@@ -200,7 +346,7 @@ function DashboardContent() {
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (quotaSummary.quotaReached) {
-        setStatus({ state: 'error', message: 'Quota atteint, passez au plan Pro.' });
+        setStatus({ state: 'error', message: 'Quota atteint, passez au plan Basic.' });
         return;
       }
       if (!file) {
@@ -326,6 +472,76 @@ function DashboardContent() {
     router.replace('/');
   }, [router, signOut]);
 
+  const handleCopyReferralLink = useCallback(async () => {
+    if (!referralInfo?.shareUrl) {
+      return;
+    }
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      setReferralMessage({ type: 'error', text: 'Copie du lien non supportée par votre navigateur.' });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(referralInfo.shareUrl);
+      setReferralMessage({ type: 'success', text: 'Lien de parrainage copié !' });
+    } catch (error) {
+      console.error('[referral] copy error', error);
+      setReferralMessage({ type: 'error', text: 'Impossible de copier le lien.' });
+    }
+  }, [referralInfo]);
+
+  const handleShareReferral = useCallback(async () => {
+    if (!referralInfo?.shareUrl) {
+      return;
+    }
+    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+      await handleCopyReferralLink();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: 'Studio AI - Invitation',
+        text: "Rejoins-moi sur Studio AI et profite d'une réduction de bienvenue !",
+        url: referralInfo.shareUrl
+      });
+    } catch (error) {
+      if (error && typeof error === 'object' && 'name' in error && (error as { name?: string }).name === 'AbortError') {
+        return;
+      }
+      console.error('[referral] share error', error);
+      setReferralMessage({ type: 'error', text: 'Partage annulé ou impossible.' });
+    }
+  }, [handleCopyReferralLink, referralInfo]);
+
+  const handleUpgradeToPro = useCallback(async () => {
+    setUpgradeFeedback(null);
+    setUpgradingPlan(true);
+    try {
+      const response = await fetch('/api/subscriptions/upgrade', {
+        method: 'POST'
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Impossible de mettre à niveau votre abonnement.');
+      }
+      setUpgradeFeedback({
+        type: 'success',
+        text: payload?.message ?? 'Votre abonnement a été mis à niveau vers le plan Pro.'
+      });
+      await loadSubscription();
+    } catch (error) {
+      console.error('[subscription] upgrade error', error);
+      setUpgradeFeedback({
+        type: 'error',
+        text:
+          error instanceof Error
+            ? error.message
+            : 'Impossible de mettre à niveau votre abonnement pour le moment.'
+      });
+    } finally {
+      setUpgradingPlan(false);
+    }
+  }, [loadSubscription]);
+
   return (
     <div style={styles.layout}>
       <section style={styles.panel}>
@@ -340,8 +556,106 @@ function DashboardContent() {
           manageDisabled={billingPortalLoading}
         />
 
+        {showQuotaReminder && (
+          <div style={styles.quotaBanner}>
+            <p style={styles.quotaBannerTitle}>Il vous reste {Math.max(0, quotaSummary.quotaLimit - quotaSummary.quotaUsed)}</p>
+            <p style={styles.quotaBannerText}>
+              Profitez des générations restantes avant la fin du cycle ou passez au plan Basic/Pro pour augmenter votre quota.
+            </p>
+          </div>
+        )}
+
+        {showUpgradeToPro && (
+          <div style={styles.upgradeCard}>
+            {upgradeFeedback ? (
+              <p
+                style={{
+                  ...styles.upgradeFeedback,
+                  color: upgradeFeedback.type === 'success' ? '#15803d' : '#dc2626'
+                }}
+              >
+                {upgradeFeedback.text}
+              </p>
+            ) : (
+              <p style={styles.upgradeIntro}>
+                Envie de plus de générations ? Passez au plan Pro en un clic, Stripe gère automatiquement le prorata.
+              </p>
+            )}
+            <button
+              type="button"
+              style={{
+                ...styles.upgradeButton,
+                ...(upgradingPlan ? styles.upgradeButtonDisabled : {})
+              }}
+              onClick={handleUpgradeToPro}
+              disabled={upgradingPlan}
+            >
+              {upgradingPlan ? 'Mise à niveau…' : 'Passer au plan Pro'}
+            </button>
+            <p style={styles.upgradeNote}>
+              Vous serez facturé au prorata pour la période restante et le nouveau plan commencera immédiatement.
+            </p>
+          </div>
+        )}
+
+        <div style={styles.referralCard}>
+          <div style={styles.referralHeader}>
+            <div>
+              <h3 style={styles.referralTitle}>Inviter un ami</h3>
+              <p style={styles.referralSubtitle}>
+                Partagez votre lien : votre ami reçoit une réduction, vous gagnez {REFERRAL_REWARD_BONUS} générations.
+              </p>
+            </div>
+            {referralInfo?.credits ? (
+              <span style={styles.referralBadge}>+{referralInfo.credits} crédits bonus</span>
+            ) : null}
+          </div>
+          {referralMessage && (
+            <p
+              style={{
+                ...styles.referralMessage,
+                color: referralMessage.type === 'success' ? '#166534' : '#b91c1c'
+              }}
+            >
+              {referralMessage.text}
+            </p>
+          )}
+          {loadingReferral ? (
+            <p style={styles.muted}>Chargement de votre lien…</p>
+          ) : referralError ? (
+            <p style={{ ...styles.muted, color: '#b91c1c' }}>{referralError}</p>
+          ) : referralInfo ? (
+            <>
+              <div style={styles.referralCodeRow}>
+                <code style={styles.referralCode}>{referralInfo.code}</code>
+                <button type="button" style={styles.referralCopy} onClick={handleCopyReferralLink}>
+                  Copier
+                </button>
+                <button type="button" style={styles.referralShare} onClick={handleShareReferral}>
+                  Partager
+                </button>
+              </div>
+              <p style={styles.referralLink}>{referralInfo.shareUrl}</p>
+              {referralInfo.referredBy ? (
+                <p style={styles.referralNote}>
+                  Parrainé avec le code <strong>{referralInfo.referredBy}</strong>.
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p style={styles.muted}>Aucun lien de parrainage disponible.</p>
+          )}
+        </div>
+
         {quotaSummary.quotaReached && (
-          <p style={styles.quotaWarning}>Quota atteint, passez au plan Pro.</p>
+          <div style={styles.quotaCta}>
+            <p style={styles.quotaCtaText}>
+              Vous avez utilisé vos {quotaSummary.quotaLimit} générations gratuites ce mois-ci.
+            </p>
+            <Link href="/pricing" style={styles.quotaCtaButton}>
+              Passer au plan Basic
+            </Link>
+          </div>
         )}
 
         <h1 style={styles.title}>New generation</h1>
@@ -469,10 +783,169 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '20px'
   },
-  quotaWarning: {
+  upgradeCard: {
+    borderRadius: '18px',
+    border: '1px solid rgba(59,130,246,0.25)',
+    padding: '18px',
+    background: 'linear-gradient(135deg, rgba(219,234,254,0.85), rgba(191,219,254,0.9))',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  upgradeIntro: {
+    margin: 0,
+    color: '#1d4ed8',
+    fontWeight: 600,
+    fontSize: '0.95rem'
+  },
+  upgradeFeedback: {
     margin: 0,
     fontWeight: 600,
-    color: '#b91c1c'
+    fontSize: '0.95rem'
+  },
+  upgradeButton: {
+    alignSelf: 'flex-start',
+    borderRadius: '999px',
+    border: 'none',
+    padding: '12px 20px',
+    fontWeight: 600,
+    color: '#fff',
+    background: 'linear-gradient(135deg, #1d4ed8, #6366f1)',
+    cursor: 'pointer'
+  },
+  upgradeButtonDisabled: {
+    opacity: 0.7,
+    cursor: 'not-allowed'
+  },
+  upgradeNote: {
+    margin: 0,
+    color: '#475569',
+    fontSize: '0.9rem'
+  },
+  quotaBanner: {
+    borderRadius: '16px',
+    border: '1px solid rgba(250,204,21,0.45)',
+    padding: '16px',
+    background: 'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.9))',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px'
+  },
+  quotaBannerTitle: {
+    margin: 0,
+    fontWeight: 700,
+    color: '#92400e'
+  },
+  quotaBannerText: {
+    margin: 0,
+    color: '#92400e',
+    fontSize: '0.9rem'
+  },
+  referralCard: {
+    borderRadius: '18px',
+    border: '1px solid rgba(148,163,184,0.35)',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    background: 'linear-gradient(135deg, rgba(236,254,255,0.9), rgba(224,231,255,0.9))'
+  },
+  referralHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '12px'
+  },
+  referralTitle: {
+    margin: 0,
+    fontSize: '1.1rem',
+    fontWeight: 700,
+    color: '#0f172a'
+  },
+  referralSubtitle: {
+    margin: '6px 0 0',
+    color: '#475569',
+    fontSize: '0.95rem'
+  },
+  referralBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: '999px',
+    padding: '6px 14px',
+    fontWeight: 600,
+    fontSize: '0.85rem',
+    backgroundColor: 'rgba(16,185,129,0.18)',
+    color: '#047857'
+  },
+  referralMessage: {
+    margin: 0,
+    fontWeight: 600
+  },
+  referralCodeRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  referralCode: {
+    padding: '10px 16px',
+    borderRadius: '12px',
+    backgroundColor: '#fff',
+    border: '1px solid rgba(148,163,184,0.4)',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    color: '#1f2937'
+  },
+  referralCopy: {
+    borderRadius: '999px',
+    border: 'none',
+    padding: '10px 16px',
+    fontWeight: 600,
+    background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
+    color: '#fff',
+    cursor: 'pointer'
+  },
+  referralShare: {
+    borderRadius: '999px',
+    border: '1px solid rgba(79,70,229,0.3)',
+    padding: '9px 16px',
+    fontWeight: 600,
+    color: '#4338ca',
+    backgroundColor: '#fff',
+    cursor: 'pointer'
+  },
+  referralLink: {
+    margin: 0,
+    fontSize: '0.9rem',
+    color: '#475569',
+    wordBreak: 'break-all'
+  },
+  referralNote: {
+    margin: 0,
+    fontSize: '0.9rem',
+    color: '#1d4ed8'
+  },
+  quotaCta: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '12px',
+    borderRadius: '16px',
+    padding: '12px 16px',
+    backgroundColor: 'rgba(254, 243, 199, 0.6)',
+    border: '1px solid rgba(251, 191, 36, 0.4)'
+  },
+  quotaCtaText: {
+    margin: 0,
+    fontWeight: 600,
+    color: '#92400e'
+  },
+  quotaCtaButton: {
+    borderRadius: '999px',
+    padding: '10px 18px',
+    fontWeight: 600,
+    color: '#fff',
+    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    textDecoration: 'none'
   },
   title: {
     margin: 0,

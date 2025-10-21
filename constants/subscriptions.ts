@@ -12,7 +12,7 @@ export const STRIPE_PRO_PRICE_ID = resolvePublicEnv(
   'price_1SIwcALRm8CqJ4igmUICsEcB'
 );
 
-export const FREE_TIER_QUOTA = 10;
+export const FREE_TIER_QUOTA = 5;
 
 export const STRIPE_PLAN_QUOTAS: Record<string, number> = {
   [STRIPE_BASIC_PRICE_ID]: 50,
@@ -29,9 +29,9 @@ export const PLAN_DETAILS: Record<
   }
 > = {
   free: {
-    label: 'Essentiel',
+    label: 'Free',
     priceLabel: 'Gratuit',
-    description: '10 générations par mois pour découvrir le studio.',
+    description: '5 générations par mois pour découvrir le studio.',
     quota: FREE_TIER_QUOTA
   },
   [STRIPE_BASIC_PRICE_ID]: {

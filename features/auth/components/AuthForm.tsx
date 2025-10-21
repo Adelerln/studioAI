@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -26,6 +26,69 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const redirectTo = useMemo(() => searchParams.get('redirectedFrom') ?? '/dashboard', [searchParams]);
+  const referralCodeParam = useMemo(() => {
+    const value = searchParams.get('ref');
+    return value ? value.trim().toUpperCase() : null;
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!referralCodeParam || typeof window === 'undefined') {
+      return;
+    }
+    localStorage.setItem('pending-referral-code', referralCodeParam);
+  }, [referralCodeParam]);
+
+  const ensureFreeSubscription = useCallback(async () => {
+    try {
+      const response = await fetch('/api/subscriptions/ensure', {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        console.warn(
+          '[auth] ensure subscription failure',
+          payload?.message ?? 'Unknown error while preparing free plan.'
+        );
+      }
+    } catch (ensureError) {
+      console.error('[auth] ensure subscription error', ensureError);
+    }
+  }, []);
+
+  const clearStoredReferralCode = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    localStorage.removeItem('pending-referral-code');
+  }, []);
+
+  const claimReferral = useCallback(async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storedCode = localStorage.getItem('pending-referral-code');
+    if (!storedCode) {
+      return;
+    }
+    try {
+      const response = await fetch('/api/referrals/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code: storedCode })
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        console.warn('[auth] referral claim failed', payload?.message);
+      }
+    } catch (referralError) {
+      console.error('[auth] referral claim error', referralError);
+    } finally {
+      clearStoredReferralCode();
+    }
+  }, [clearStoredReferralCode]);
 
   const handleGoogleSignIn = useCallback(async () => {
     setError(null);
@@ -100,6 +163,8 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
           setSubmitting(false);
           return;
         }
+        await ensureFreeSubscription();
+        await claimReferral();
         router.replace(redirectTo);
         return;
       }
@@ -117,9 +182,11 @@ export function AuthForm({ initialMode = 'login' }: AuthFormProps) {
         return;
       }
 
+      await ensureFreeSubscription();
+      await claimReferral();
       router.replace(redirectTo);
     },
-    [form.email, form.password, mode, redirectTo, router, signIn, signUp, validate]
+    [claimReferral, ensureFreeSubscription, form.email, form.password, mode, redirectTo, router, signIn, signUp, validate]
   );
 
   return (
