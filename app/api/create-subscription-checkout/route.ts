@@ -99,27 +99,26 @@ export async function POST(request: NextRequest) {
     const successUrl = `${trimmedPublicUrl}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${trimmedPublicUrl}/pricing`;
 
+    const userMetadata = (user.user_metadata ?? {}) as Record<string, unknown>;
     const referralCouponId =
-      typeof (user.user_metadata as Record<string, unknown> | undefined)?.referral_coupon_id === 'string'
-        ? (user.user_metadata as Record<string, unknown>).referral_coupon_id
-        : null;
-    const referralCouponRedeemed = Boolean(
-      (user.user_metadata as Record<string, unknown> | undefined)?.referral_coupon_redeemed
-    );
+      typeof userMetadata.referral_coupon_id === 'string' ? userMetadata.referral_coupon_id : null;
+    const referralCouponRedeemed = Boolean(userMetadata.referral_coupon_redeemed);
+
+    let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
+    if (referralCouponId && !referralCouponRedeemed) {
+      discounts = [
+        {
+          coupon: referralCouponId
+        }
+      ];
+    }
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       billing_address_collection: 'auto',
       allow_promotion_codes: true,
-      discounts:
-        referralCouponId && !referralCouponRedeemed
-          ? [
-              {
-                coupon: referralCouponId
-              }
-            ]
-          : undefined,
+      discounts,
       success_url: successUrl,
       cancel_url: cancelUrl,
       line_items: [

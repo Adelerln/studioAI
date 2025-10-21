@@ -161,7 +161,7 @@ async function notifySubscriptionCancellation(subscription: Stripe.Subscription)
     return;
   }
 
-  const endDate = formatDate(subscription.ended_at ?? subscription.current_period_end ?? null);
+  const endDate = formatDate(subscription.ended_at ?? null);
 
   const subject = 'Confirmation de résiliation de votre abonnement';
   const text = [

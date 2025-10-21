@@ -16,13 +16,6 @@ function requireProPriceId(): string {
   return STRIPE_PRO_PRICE_ID;
 }
 
-function toIso(epochSeconds: number | null | undefined): string | null {
-  if (!epochSeconds) {
-    return null;
-  }
-  return new Date(epochSeconds * 1000).toISOString();
-}
-
 export async function POST(_request: NextRequest) {
   try {
     const proPriceId = requireProPriceId();
@@ -59,9 +52,12 @@ export async function POST(_request: NextRequest) {
 
     const stripe = getStripeClient();
 
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id, {
-      expand: ['items.data.price']
-    });
+    const stripeSubscription = (await stripe.subscriptions.retrieve(
+      subscription.stripe_subscription_id,
+      {
+        expand: ['items.data.price']
+      }
+    )) as Stripe.Subscription;
 
     const subscriptionItem = stripeSubscription.items.data[0];
 
@@ -79,13 +75,13 @@ export async function POST(_request: NextRequest) {
       proration_behavior: 'create_prorations'
     });
 
-    const updatedSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id);
+    const updatedSubscription = (await stripe.subscriptions.retrieve(
+      subscription.stripe_subscription_id
+    )) as Stripe.Subscription;
 
     await upsertSubscriptionForUser(user.id, {
       stripe_price_id: proPriceId,
       status: updatedSubscription.status,
-      current_period_start: toIso(updatedSubscription.current_period_start),
-      current_period_end: toIso(updatedSubscription.current_period_end),
       quota_limit: resolveQuotaLimit(proPriceId)
     });
 
@@ -101,4 +97,3 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ message }, { status: 500 });
   }
 }
-
