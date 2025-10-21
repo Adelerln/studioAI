@@ -1,8 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700&display=swap');
-
 :root {
   color-scheme: light;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Futura', 'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif;
   background-color: #f4f5f9;
   color: #0f172a;
 }

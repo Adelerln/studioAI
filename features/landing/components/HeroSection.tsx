@@ -97,7 +97,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   heading: {
     margin: 0,
-    fontFamily: "'Manrope', 'Inter', sans-serif",
+    fontFamily: "'Futura', 'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif",
     fontSize: 'clamp(2.8rem, 5vw, 4.2rem)',
     lineHeight: 1.05,
     letterSpacing: '-0.02em',

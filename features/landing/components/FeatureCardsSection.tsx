@@ -55,7 +55,7 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: 'clamp(2rem, 4vw, 3rem)',
     lineHeight: 1.2,
-    fontFamily: "'Manrope', 'Inter', sans-serif'",
+    fontFamily: "'Futura', 'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif",
     color: '#0f172a'
   },
   description: {

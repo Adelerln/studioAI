@@ -51,7 +51,7 @@ export function Header() {
             )}
           </div>
         )}
-        <Link href="/dashboard" style={styles.studioButton}>
+        <Link href="/dashboard" style={styles.navLink}>
           Accès au studio
         </Link>
         {user ? (
@@ -69,10 +69,10 @@ export function Header() {
         ) : (
           showAuthLinks && (
             <div style={styles.links}>
-              <Link href="/login" style={{ ...styles.link, ...styles.primaryCta }}>
+              <Link href="/login" style={styles.navLink}>
                 log in
               </Link>
-              <Link href="/signup" style={{ ...styles.link, ...styles.secondaryCta }}>
+              <Link href="/signup" style={styles.navLink}>
                 sign up
               </Link>
             </div>
@@ -111,14 +111,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '18px'
   },
-  studioButton: {
-    fontWeight: 600,
-    padding: '10px 20px',
-    borderRadius: '999px',
-    background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
-    color: '#fff',
-    boxShadow: '0 20px 45px -35px rgba(79,70,229,0.6)'
-  },
   navLink: {
     fontSize: '0.95rem',
     fontWeight: 500,
@@ -128,24 +120,7 @@ const styles: Record<string, React.CSSProperties> = {
   links: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px'
-  },
-  link: {
-    fontWeight: 600,
-    padding: '10px 18px',
-    borderRadius: '999px',
-    border: '1px solid transparent',
-    textTransform: 'none'
-  },
-  primaryCta: {
-    background: 'linear-gradient(135deg, #2563eb, #6366f1)',
-    color: '#fff'
-  },
-  secondaryCta: {
-    borderColor: 'rgba(15,23,42,0.12)',
-    color: '#0f172a',
-    backgroundColor: '#fff',
-    boxShadow: '0 10px 30px -25px rgba(15,23,42,0.6)'
+    gap: '18px'
   },
   session: {
     display: 'flex',

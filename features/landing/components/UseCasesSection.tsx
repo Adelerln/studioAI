@@ -56,7 +56,7 @@ const styles: Record<string, React.CSSProperties> = {
   heading: {
     margin: 0,
     fontSize: 'clamp(2.4rem, 4vw, 3.2rem)',
-    fontFamily: "'Manrope','Inter',sans-serif",
+    fontFamily: "'Futura', 'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif",
     lineHeight: 1.15
   },
   subtitle: {
