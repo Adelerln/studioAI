@@ -92,12 +92,12 @@ export function SubscriptionStatus({
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    borderRadius: '20px',
-    border: '1px solid rgba(148,163,184,0.3)',
-    padding: '20px',
+    borderRadius: '18px',
+    border: '1px solid rgba(148,163,184,0.28)',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '14px',
+    gap: '12px',
     backgroundColor: 'rgba(248,250,252,0.9)'
   },
   header: {
@@ -107,7 +107,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '1.2rem',
+    fontSize: '1.05rem',
     fontWeight: 700,
     color: '#0f172a'
   },
@@ -144,7 +144,7 @@ const styles: Record<string, React.CSSProperties> = {
   manageButton: {
     borderRadius: '999px',
     border: 'none',
-    padding: '10px 18px',
+    padding: '9px 16px',
     fontWeight: 600,
     background: 'linear-gradient(135deg, #22d3ee, #818cf8)',
     color: '#fff',

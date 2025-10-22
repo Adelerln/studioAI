@@ -544,7 +544,7 @@ function DashboardContent() {
 
   return (
     <div style={styles.layout}>
-      <section style={styles.panel}>
+      <aside style={styles.sidebar}>
         <SubscriptionStatus
           status={subscription?.status ?? null}
           priceId={subscription?.stripe_price_id ?? null}
@@ -658,6 +658,57 @@ function DashboardContent() {
           </div>
         )}
 
+        <section style={styles.projects}>
+          <h2 style={styles.projectsTitle}>My projects</h2>
+          {loadingProjects ? (
+            <p style={styles.empty}>Loading…</p>
+          ) : projectsError ? (
+            <p style={{ ...styles.empty, color: '#ef4444' }}>{projectsError}</p>
+          ) : projects.length === 0 ? (
+            <p style={styles.empty}>No project yet. Launch your first generation!</p>
+          ) : (
+            <div style={styles.cards}>
+              {projects.map((project) => (
+                <article key={project.id} style={styles.card}>
+                  <div style={styles.images}>
+                    {project.input_image_url && (
+                      <img src={project.input_image_url} alt="Original image" style={styles.image} />
+                    )}
+                    {project.output_image_url && (
+                      <img src={project.output_image_url} alt="AI result" style={styles.image} />
+                    )}
+                  </div>
+                  <p style={styles.prompt}>{project.prompt}</p>
+                  <div style={styles.cardFooter}>
+                    <time style={styles.time}>
+                      {new Date(project.created_at).toLocaleString('en-US', {
+                        dateStyle: 'short',
+                        timeStyle: 'short'
+                      })}
+                    </time>
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      style={styles.delete}
+                      disabled={deletingId === project.id}
+                    >
+                      {deletingId === project.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          {user && (
+            <div style={styles.logoutRow}>
+              <button onClick={handleSignOut} style={styles.logout} disabled={signingOut}>
+                {signingOut ? 'Signing out…' : 'Sign out'}
+              </button>
+            </div>
+          )}
+        </section>
+      </aside>
+
+      <section style={styles.main}>
         <h1 style={styles.title}>New generation</h1>
         <form style={styles.form} onSubmit={handleSubmit}>
           <label htmlFor="file" style={styles.label}>
@@ -713,55 +764,6 @@ function DashboardContent() {
           </button>
         </form>
       </section>
-
-      <section style={styles.gallery}>
-        <h2 style={styles.galleryTitle}>My projects</h2>
-        {loadingProjects ? (
-          <p style={styles.empty}>Loading…</p>
-        ) : projectsError ? (
-          <p style={{ ...styles.empty, color: '#ef4444' }}>{projectsError}</p>
-        ) : projects.length === 0 ? (
-          <p style={styles.empty}>No project yet. Launch your first generation!</p>
-        ) : (
-          <div style={styles.cards}>
-            {projects.map((project) => (
-              <article key={project.id} style={styles.card}>
-                <div style={styles.images}>
-                  {project.input_image_url && (
-                    <img src={project.input_image_url} alt="Original image" style={styles.image} />
-                  )}
-                  {project.output_image_url && (
-                    <img src={project.output_image_url} alt="AI result" style={styles.image} />
-                  )}
-                </div>
-                <p style={styles.prompt}>{project.prompt}</p>
-                <div style={styles.cardFooter}>
-                  <time style={styles.time}>
-                    {new Date(project.created_at).toLocaleString('en-US', {
-                      dateStyle: 'short',
-                      timeStyle: 'short'
-                    })}
-                  </time>
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    style={styles.delete}
-                    disabled={deletingId === project.id}
-                  >
-                    {deletingId === project.id ? 'Deleting…' : 'Delete'}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-        {user && (
-          <div style={styles.logoutRow}>
-            <button onClick={handleSignOut} style={styles.logout} disabled={signingOut}>
-              {signingOut ? 'Signing out…' : 'Sign out'}
-            </button>
-          </div>
-        )}
-      </section>
     </div>
   );
 }
@@ -770,11 +772,17 @@ const styles: Record<string, React.CSSProperties> = {
   layout: {
     flex: 1,
     display: 'grid',
+    alignItems: 'start',
     gap: '32px',
-    gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
+    gridTemplateColumns: 'minmax(280px, 360px) 1fr',
     padding: '40px clamp(16px, 4vw, 48px)'
   },
-  panel: {
+  sidebar: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
+  },
+  main: {
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: '24px',
     padding: '32px',
@@ -784,30 +792,30 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '20px'
   },
   upgradeCard: {
-    borderRadius: '18px',
-    border: '1px solid rgba(59,130,246,0.25)',
-    padding: '18px',
+    borderRadius: '16px',
+    border: '1px solid rgba(59,130,246,0.2)',
+    padding: '14px',
     background: 'linear-gradient(135deg, rgba(219,234,254,0.85), rgba(191,219,254,0.9))',
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: '10px'
   },
   upgradeIntro: {
     margin: 0,
     color: '#1d4ed8',
     fontWeight: 600,
-    fontSize: '0.95rem'
+    fontSize: '0.9rem'
   },
   upgradeFeedback: {
     margin: 0,
     fontWeight: 600,
-    fontSize: '0.95rem'
+    fontSize: '0.9rem'
   },
   upgradeButton: {
     alignSelf: 'flex-start',
     borderRadius: '999px',
     border: 'none',
-    padding: '12px 20px',
+    padding: '10px 18px',
     fontWeight: 600,
     color: '#fff',
     background: 'linear-gradient(135deg, #1d4ed8, #6366f1)',
@@ -820,13 +828,13 @@ const styles: Record<string, React.CSSProperties> = {
   upgradeNote: {
     margin: 0,
     color: '#475569',
-    fontSize: '0.9rem'
+    fontSize: '0.85rem'
   },
   quotaBanner: {
-    borderRadius: '16px',
-    border: '1px solid rgba(250,204,21,0.45)',
-    padding: '16px',
-    background: 'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.9))',
+    borderRadius: '14px',
+    border: '1px solid rgba(250,204,21,0.35)',
+    padding: '14px',
+    background: 'linear-gradient(135deg, rgba(254,243,199,0.75), rgba(253,230,138,0.8))',
     display: 'flex',
     flexDirection: 'column',
     gap: '6px'
@@ -842,12 +850,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.9rem'
   },
   referralCard: {
-    borderRadius: '18px',
-    border: '1px solid rgba(148,163,184,0.35)',
-    padding: '20px',
+    borderRadius: '16px',
+    border: '1px solid rgba(148,163,184,0.3)',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '10px',
     background: 'linear-gradient(135deg, rgba(236,254,255,0.9), rgba(224,231,255,0.9))'
   },
   referralHeader: {
@@ -870,7 +878,7 @@ const styles: Record<string, React.CSSProperties> = {
   referralBadge: {
     alignSelf: 'flex-start',
     borderRadius: '999px',
-    padding: '6px 14px',
+    padding: '6px 12px',
     fontWeight: 600,
     fontSize: '0.85rem',
     backgroundColor: 'rgba(16,185,129,0.18)',
@@ -929,8 +937,8 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: '12px',
-    borderRadius: '16px',
-    padding: '12px 16px',
+    borderRadius: '14px',
+    padding: '10px 14px',
     backgroundColor: 'rgba(254, 243, 199, 0.6)',
     border: '1px solid rgba(251, 191, 36, 0.4)'
   },
@@ -941,11 +949,26 @@ const styles: Record<string, React.CSSProperties> = {
   },
   quotaCtaButton: {
     borderRadius: '999px',
-    padding: '10px 18px',
+    padding: '10px 16px',
     fontWeight: 600,
     color: '#fff',
     background: 'linear-gradient(135deg, #f59e0b, #d97706)',
     textDecoration: 'none'
+  },
+  projects: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: '20px',
+    padding: '24px',
+    boxShadow: '0 20px 50px -40px rgba(15, 23, 42, 0.45)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
+  },
+  projectsTitle: {
+    margin: 0,
+    fontSize: '1.4rem',
+    fontWeight: 700,
+    color: '#111827'
   },
   title: {
     margin: 0,
@@ -1005,21 +1028,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.9rem',
     fontWeight: 500
   },
-  gallery: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: '24px',
-    padding: '32px',
-    boxShadow: '0 25px 60px -40px rgba(15, 23, 42, 0.45)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px'
-  },
-  galleryTitle: {
-    margin: 0,
-    fontSize: '1.6rem',
-    fontWeight: 700,
-    color: '#111827'
-  },
   empty: {
     margin: 0,
     fontSize: '1rem',
@@ -1027,24 +1035,25 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cards: {
     display: 'grid',
-    gap: '20px'
+    gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))',
+    gap: '14px'
   },
   card: {
-    borderRadius: '20px',
-    border: '1px solid rgba(148,163,184,0.3)',
-    padding: '20px',
+    borderRadius: '16px',
+    border: '1px solid rgba(148,163,184,0.25)',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px'
+    gap: '12px'
   },
   images: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-    gap: '12px'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: '10px'
   },
   image: {
     width: '100%',
-    borderRadius: '16px',
+    borderRadius: '14px',
     objectFit: 'cover',
     border: '1px solid rgba(148,163,184,0.3)'
   },
