@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { runReplicateModel } from '@/services/replicate';
 import { FREE_TIER_QUOTA } from '@/lib/stripe';
 import { hasActiveSubscription, resolveQuotaLimit } from '@/services/subscriptions';
+import { consumeCredits } from '@/services/credits';
 
 export const runtime = 'nodejs';
 
@@ -100,10 +101,7 @@ export async function POST(request: NextRequest) {
       throw subscriptionError;
     }
 
-    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
-    const userMetadata = (authUser?.user?.user_metadata ?? {}) as Record<string, unknown>;
-    let referralCredits = Number(userMetadata.referral_credits ?? 0) || 0;
-    let usingReferralCredit = false;
+    let usedCredit = false;
 
     let quotaUsed = subscription?.quota_used ?? 0;
     let quotaLimit = FREE_TIER_QUOTA;
@@ -136,18 +134,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (quotaUsed >= quotaLimit) {
-      if (referralCredits > 0) {
-        usingReferralCredit = true;
-        referralCredits -= 1;
-      } else {
+      const creditConsumed = await consumeCredits(user.id, 1);
+      if (!creditConsumed) {
         return NextResponse.json(
           {
             message:
-              'You have reached your generation quota for this cycle. Upgrade to the Basic plan to increase your limit.'
+              'You have reached your generation quota for this cycle. Upgrade to the Basic plan to increase your limit or purchase additional credits.'
           },
           { status: 402 }
         );
       }
+      usedCredit = true;
     }
 
     console.log('[generate] replicate input', input);
@@ -189,29 +186,18 @@ export async function POST(request: NextRequest) {
       throw insertError;
     }
 
-    const nextUsage = quotaUsed + 1;
-    const { error: usageUpdateError } = await supabaseAdmin
-      .from('subscriptions')
-      .update({
-        quota_used: nextUsage,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id);
+    if (!usedCredit) {
+      const nextUsage = quotaUsed + 1;
+      const { error: usageUpdateError } = await supabaseAdmin
+        .from('subscriptions')
+        .update({
+          quota_used: nextUsage,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
 
-    if (usageUpdateError) {
-      throw usageUpdateError;
-    }
-
-    if (usingReferralCredit) {
-      try {
-        await supabaseAdmin.auth.admin.updateUserById(user.id, {
-          user_metadata: {
-            ...userMetadata,
-            referral_credits: referralCredits
-          }
-        });
-      } catch (referralUpdateError) {
-        console.error('[generate] unable to decrement referral credits', referralUpdateError);
+      if (usageUpdateError) {
+        throw usageUpdateError;
       }
     }
 

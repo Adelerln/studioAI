@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { ensureSubscriptionRow } from '@/services/subscriptions';
 import { ensureReferralCodeForUser, findReferrerByCode } from '@/services/referrals';
 import { REFERRAL_REWARD_BONUS, STRIPE_REFERRAL_COUPON_ID } from '@/constants/referrals';
+import { addCredits } from '@/services/credits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -73,16 +74,7 @@ export async function POST(request: NextRequest) {
     await ensureSubscriptionRow(referrerId, undefined);
     await ensureReferralCodeForUser(referrerId);
 
-    const { data: referrerUserData } = await supabaseAdmin.auth.admin.getUserById(referrerId);
-    const referrerMetadata = (referrerUserData?.user?.user_metadata ?? {}) as Record<string, unknown>;
-    const currentCredits = Number(referrerMetadata.referral_credits ?? 0) || 0;
-
-    await supabaseAdmin.auth.admin.updateUserById(referrerId, {
-      user_metadata: {
-        ...referrerMetadata,
-        referral_credits: currentCredits + REFERRAL_REWARD_BONUS
-      }
-    });
+    await addCredits(referrerId, REFERRAL_REWARD_BONUS);
 
     await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: {
@@ -90,7 +82,8 @@ export async function POST(request: NextRequest) {
         referred_by: code,
         referral_reward_claimed: true,
         referral_coupon_id: currentMetadata.referral_coupon_id ?? STRIPE_REFERRAL_COUPON_ID ?? null,
-        referral_coupon_redeemed: false
+        referral_coupon_redeemed: false,
+        referral_credits: 0
       }
     });
 

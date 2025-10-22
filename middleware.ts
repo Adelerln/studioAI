@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
 
   if (!session && (isProtectedPage || isProtectedApi)) {
     if (isProtectedApi) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
     const redirectUrl = request.nextUrl.clone();

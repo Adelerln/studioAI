@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { ensureReferralCodeForUser } from '@/services/referrals';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
+import { getCreditBalance } from '@/services/credits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,10 +39,15 @@ export async function GET(_request: NextRequest) {
       const supabaseAdmin = createSupabaseAdminClient();
       const { data: adminUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
       const metadata = (adminUser?.user?.user_metadata ?? {}) as Record<string, unknown>;
-      credits = Number(metadata.referral_credits ?? 0) || 0;
       referredBy = typeof metadata.referred_by === 'string' ? metadata.referred_by : null;
     } catch (adminError) {
       console.warn('[referral.code] unable to load referral metadata, defaulting to zero credits', adminError);
+    }
+
+    try {
+      credits = await getCreditBalance(user.id);
+    } catch (creditError) {
+      console.warn('[referral.code] unable to load credit balance', creditError);
     }
 
     return NextResponse.json({
