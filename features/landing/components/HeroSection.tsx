@@ -16,6 +16,9 @@ export function HeroSection() {
               {heroContent.secondaryCta.label}
             </Link>
           )}
+          <Link href="/dashboard" style={styles.primaryAction}>
+            Access studio
+          </Link>
         </div>
       </div>
 
@@ -122,6 +125,14 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#0f172a',
     backgroundColor: '#fff',
     boxShadow: '0 20px 45px -35px rgba(15,23,42,0.45)'
+  },
+  primaryAction: {
+    borderRadius: '999px',
+    padding: '12px 24px',
+    fontWeight: 600,
+    color: '#fff',
+    background: 'linear-gradient(135deg, #2563eb, #6366f1)',
+    boxShadow: '0 24px 50px -35px rgba(37, 99, 235, 0.6)'
   },
   media: {
     position: 'relative',

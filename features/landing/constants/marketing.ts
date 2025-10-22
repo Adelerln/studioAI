@@ -18,7 +18,7 @@ export const heroContent: HeroContent = {
   title: "Reimagine your team's visual production",
   subtitle:
     'Prototype, validate, and deploy AI-powered visual experiences in minutes. Connect your data, orchestrate the best models, and ship results that meet creative direction standards.',
-  secondaryCta: { label: 'Voir les offres', href: '/pricing' },
+  secondaryCta: { label: 'View plans', href: '/pricing' },
   mediaCaption: 'Collaborative workspace — Studio AI flow preview'
 };
 
