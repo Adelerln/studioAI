@@ -130,7 +130,7 @@ function DashboardContent() {
 
       if (!ensureResponse.ok) {
         const payload = await ensureResponse.json().catch(() => ({}));
-        throw new Error(payload?.message ?? 'Impossible de préparer votre plan gratuit.');
+        throw new Error(payload?.message ?? 'Unable to prepare your free plan.');
       }
 
       const { data: ensured, error: ensuredError } = await supabase
@@ -147,7 +147,7 @@ function DashboardContent() {
     } catch (subscriptionError) {
       console.error('[subscription] fetch error', subscriptionError);
       setSubscription(null);
-      setSubscriptionError('Impossible de récupérer votre abonnement.');
+      setSubscriptionError('Unable to retrieve your subscription.');
     } finally {
       setLoadingSubscription(false);
     }
@@ -164,7 +164,7 @@ function DashboardContent() {
       const response = await fetch('/api/referrals/code');
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.message ?? 'Impossible de récupérer votre code de parrainage.');
+        throw new Error(payload?.message ?? 'Unable to retrieve your referral code.');
       }
       const payload = (await response.json()) as { code: string; credits: number; referredBy: string | null };
       const origin =
@@ -180,7 +180,7 @@ function DashboardContent() {
     } catch (error) {
       console.error('[referral] fetch error', error);
       setReferralError(
-        error instanceof Error ? error.message : 'Impossible de récupérer votre code de parrainage.'
+        error instanceof Error ? error.message : 'Unable to retrieve your referral code.'
       );
     } finally {
       setLoadingReferral(false);
@@ -217,7 +217,7 @@ function DashboardContent() {
             const payload = await response.json().catch(() => ({}));
             throw new Error(payload?.message ?? 'Unable to finalise your subscription.');
           }
-          setStatus({ state: 'success', message: 'Votre abonnement a été activé.' });
+          setStatus({ state: 'success', message: 'Your subscription has been activated.' });
           await loadSubscription();
           setCheckoutHandled(true);
           router.replace('/dashboard');
@@ -226,7 +226,7 @@ function DashboardContent() {
           console.error('[checkout] finalise error', error);
           setStatus({
             state: 'error',
-            message: error instanceof Error ? error.message : 'Échec de l’activation de votre abonnement.'
+            message: error instanceof Error ? error.message : 'Failed to activate your subscription.'
           });
         })
         .finally(() => {
@@ -262,17 +262,17 @@ function DashboardContent() {
         });
         const payload = await response.json().catch(() => ({}));
         if (response.ok) {
-          setReferralMessage({ type: 'success', text: 'Bonus parrainage appliqué à votre compte.' });
+          setReferralMessage({ type: 'success', text: 'Referral bonus applied to your account.' });
           await loadReferralInfo();
         } else {
           setReferralMessage({
             type: 'error',
-            text: payload?.message ?? 'Impossible de valider votre parrainage.'
+            text: payload?.message ?? 'Unable to validate your referral.'
           });
         }
       } catch (error) {
         console.error('[referral] claim error', error);
-        setReferralMessage({ type: 'error', text: 'Impossible de valider votre parrainage.' });
+        setReferralMessage({ type: 'error', text: 'Unable to validate your referral.' });
       } finally {
         localStorage.removeItem('pending-referral-code');
       }
@@ -346,7 +346,7 @@ function DashboardContent() {
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (quotaSummary.quotaReached) {
-        setStatus({ state: 'error', message: 'Quota atteint, passez au plan Basic.' });
+        setStatus({ state: 'error', message: 'Quota reached, switch to the Basic plan.' });
         return;
       }
       if (!file) {
@@ -390,7 +390,7 @@ function DashboardContent() {
         console.error('[generate] error', error);
         setStatus({
           state: 'error',
-          message: error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'
+          message: error instanceof Error ? error.message : 'An unknown error occurred.'
         });
       }
     },
@@ -419,7 +419,7 @@ function DashboardContent() {
         console.error('[delete] error', error);
         setStatus({
           state: 'error',
-          message: error instanceof Error ? error.message : 'Impossible de supprimer ce projet.'
+          message: error instanceof Error ? error.message : 'Unable to delete this project.'
         });
       } finally {
         setDeletingId(null);
@@ -438,11 +438,11 @@ function DashboardContent() {
       const payload = (await response.json().catch(() => ({}))) as { url?: string; message?: string };
 
       if (!response.ok) {
-        throw new Error(payload?.message ?? 'Impossible d’ouvrir le portail de facturation.');
+        throw new Error(payload?.message ?? 'Unable to open the billing portal.');
       }
 
       if (!payload?.url) {
-        throw new Error('Lien du portail client manquant.');
+        throw new Error('Customer portal link missing.');
       }
 
       window.location.assign(payload.url);
@@ -453,7 +453,7 @@ function DashboardContent() {
         message:
           error instanceof Error
             ? error.message
-            : 'Impossible de charger le portail de facturation pour le moment.'
+            : 'Unable to load the billing portal right now.'
       });
     } finally {
       setBillingPortalLoading(false);
@@ -477,15 +477,15 @@ function DashboardContent() {
       return;
     }
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
-      setReferralMessage({ type: 'error', text: 'Copie du lien non supportée par votre navigateur.' });
+      setReferralMessage({ type: 'error', text: 'Link copy is not supported by your browser.' });
       return;
     }
     try {
       await navigator.clipboard.writeText(referralInfo.shareUrl);
-      setReferralMessage({ type: 'success', text: 'Lien de parrainage copié !' });
+      setReferralMessage({ type: 'success', text: 'Referral link copied!' });
     } catch (error) {
       console.error('[referral] copy error', error);
-      setReferralMessage({ type: 'error', text: 'Impossible de copier le lien.' });
+      setReferralMessage({ type: 'error', text: 'Unable to copy the link.' });
     }
   }, [referralInfo]);
 
@@ -500,7 +500,7 @@ function DashboardContent() {
     try {
       await navigator.share({
         title: 'Studio AI - Invitation',
-        text: "Rejoins-moi sur Studio AI et profite d'une réduction de bienvenue !",
+        text: 'Join me on Studio AI and enjoy a welcome discount!',
         url: referralInfo.shareUrl
       });
     } catch (error) {
@@ -508,7 +508,7 @@ function DashboardContent() {
         return;
       }
       console.error('[referral] share error', error);
-      setReferralMessage({ type: 'error', text: 'Partage annulé ou impossible.' });
+      setReferralMessage({ type: 'error', text: 'Sharing cancelled or unavailable.' });
     }
   }, [handleCopyReferralLink, referralInfo]);
 
@@ -521,11 +521,11 @@ function DashboardContent() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload?.message ?? 'Impossible de mettre à niveau votre abonnement.');
+        throw new Error(payload?.message ?? 'Unable to upgrade your subscription.');
       }
       setUpgradeFeedback({
         type: 'success',
-        text: payload?.message ?? 'Votre abonnement a été mis à niveau vers le plan Pro.'
+        text: payload?.message ?? 'Your subscription has been upgraded to the Pro plan.'
       });
       await loadSubscription();
     } catch (error) {
@@ -535,7 +535,7 @@ function DashboardContent() {
         text:
           error instanceof Error
             ? error.message
-            : 'Impossible de mettre à niveau votre abonnement pour le moment.'
+            : 'Unable to upgrade your subscription right now.'
       });
     } finally {
       setUpgradingPlan(false);
@@ -558,9 +558,9 @@ function DashboardContent() {
 
         {showQuotaReminder && (
           <div style={styles.quotaBanner}>
-            <p style={styles.quotaBannerTitle}>Il vous reste {Math.max(0, quotaSummary.quotaLimit - quotaSummary.quotaUsed)}</p>
+            <p style={styles.quotaBannerTitle}>You have {Math.max(0, quotaSummary.quotaLimit - quotaSummary.quotaUsed)} generations left</p>
             <p style={styles.quotaBannerText}>
-              Profitez des générations restantes avant la fin du cycle ou passez au plan Basic/Pro pour augmenter votre quota.
+              Use the remaining quota before the cycle renews or upgrade to Basic/Pro to increase your limit.
             </p>
           </div>
         )}
@@ -578,7 +578,7 @@ function DashboardContent() {
               </p>
             ) : (
               <p style={styles.upgradeIntro}>
-                Envie de plus de générations ? Passez au plan Pro en un clic, Stripe gère automatiquement le prorata.
+                Need more generations? Upgrade to the Pro plan in one click, Stripe automatically handles proration.
               </p>
             )}
             <button
@@ -590,10 +590,10 @@ function DashboardContent() {
               onClick={handleUpgradeToPro}
               disabled={upgradingPlan}
             >
-              {upgradingPlan ? 'Mise à niveau…' : 'Passer au plan Pro'}
+              {upgradingPlan ? 'Upgrading…' : 'Upgrade to Pro'}
             </button>
             <p style={styles.upgradeNote}>
-              Vous serez facturé au prorata pour la période restante et le nouveau plan commencera immédiatement.
+              You will be billed pro rata for the remaining period and the new plan will start immediately.
             </p>
           </div>
         )}
@@ -601,13 +601,13 @@ function DashboardContent() {
         <div style={styles.referralCard}>
           <div style={styles.referralHeader}>
             <div>
-              <h3 style={styles.referralTitle}>Inviter un ami</h3>
+              <h3 style={styles.referralTitle}>Invite a friend</h3>
               <p style={styles.referralSubtitle}>
-                Partagez votre lien : votre ami reçoit une réduction, vous gagnez {REFERRAL_REWARD_BONUS} générations.
+                Share your link: your friend receives a discount and you earn {REFERRAL_REWARD_BONUS} bonus generations.
               </p>
             </div>
             {referralInfo?.credits ? (
-              <span style={styles.referralBadge}>+{referralInfo.credits} crédits bonus</span>
+              <span style={styles.referralBadge}>+{referralInfo.credits} bonus credits</span>
             ) : null}
           </div>
           {referralMessage && (
@@ -621,7 +621,7 @@ function DashboardContent() {
             </p>
           )}
           {loadingReferral ? (
-            <p style={styles.muted}>Chargement de votre lien…</p>
+            <p style={styles.muted}>Loading your link…</p>
           ) : referralError ? (
             <p style={{ ...styles.muted, color: '#b91c1c' }}>{referralError}</p>
           ) : referralInfo ? (
@@ -629,31 +629,31 @@ function DashboardContent() {
               <div style={styles.referralCodeRow}>
                 <code style={styles.referralCode}>{referralInfo.code}</code>
                 <button type="button" style={styles.referralCopy} onClick={handleCopyReferralLink}>
-                  Copier
+                  Copy
                 </button>
                 <button type="button" style={styles.referralShare} onClick={handleShareReferral}>
-                  Partager
+                  Share
                 </button>
               </div>
               <p style={styles.referralLink}>{referralInfo.shareUrl}</p>
               {referralInfo.referredBy ? (
                 <p style={styles.referralNote}>
-                  Parrainé avec le code <strong>{referralInfo.referredBy}</strong>.
+                  Referred with code <strong>{referralInfo.referredBy}</strong>.
                 </p>
               ) : null}
             </>
           ) : (
-            <p style={styles.muted}>Aucun lien de parrainage disponible.</p>
+            <p style={styles.muted}>No referral link available.</p>
           )}
         </div>
 
         {quotaSummary.quotaReached && (
           <div style={styles.quotaCta}>
             <p style={styles.quotaCtaText}>
-              Vous avez utilisé vos {quotaSummary.quotaLimit} générations gratuites ce mois-ci.
+              You have used your {quotaSummary.quotaLimit} free generations this month.
             </p>
             <Link href="/pricing" style={styles.quotaCtaButton}>
-              Passer au plan Basic
+              Upgrade to the Basic plan
             </Link>
           </div>
         )}
@@ -737,7 +737,7 @@ function DashboardContent() {
                 <p style={styles.prompt}>{project.prompt}</p>
                 <div style={styles.cardFooter}>
                   <time style={styles.time}>
-                    {new Date(project.created_at).toLocaleString('fr-FR', {
+                    {new Date(project.created_at).toLocaleString('en-US', {
                       dateStyle: 'short',
                       timeStyle: 'short'
                     })}

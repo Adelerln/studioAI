@@ -37,7 +37,7 @@ function formatCurrency(
     return null;
   }
   try {
-    return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency.toUpperCase()
     }).format(amount / 100);
@@ -50,7 +50,7 @@ function formatDate(epochSeconds: number | null | undefined): string | null {
   if (!epochSeconds) {
     return null;
   }
-  return new Date(epochSeconds * 1000).toLocaleDateString('fr-FR', {
+  return new Date(epochSeconds * 1000).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -107,28 +107,28 @@ async function notifyPaymentFailure(paymentIntent: Stripe.PaymentIntent) {
   const formattedAmount = formatCurrency(paymentIntent.amount ?? null, paymentIntent.currency ?? null);
   const failureMessage = paymentIntent.last_payment_error?.message ?? null;
 
-  const subject = 'Échec de paiement pour votre abonnement';
-  const fallbackAmount = formattedAmount ?? 'votre dernier paiement';
+  const subject = 'Payment failure for your subscription';
+  const fallbackAmount = formattedAmount ?? 'your latest payment';
   const guidance =
     failureMessage ??
-    'Veuillez vérifier vos informations de paiement ou utiliser une autre carte dans le portail de facturation.';
+    'Please check your payment details or try another card in the billing portal.';
   const text = [
-    'Bonjour,',
+    'Hello,',
     '',
-    `Nous n’avons pas pu prélever ${fallbackAmount} pour votre dernier paiement.`,
+    `We were unable to collect ${fallbackAmount} for your last payment.`,
     guidance,
     '',
-    'Vous pouvez mettre à jour vos informations de paiement via le portail de facturation.',
+    'You can update your payment details via the billing portal.',
     '',
-    'Merci,',
-    'L’équipe Studio AI'
+    'Thank you,',
+    'The Studio AI team'
   ].join('\n');
 
-  const html = `<p>Bonjour,</p>
-<p>Nous n’avons pas pu prélever ${fallbackAmount} pour votre dernier paiement.</p>
+  const html = `<p>Hello,</p>
+<p>We were unable to collect ${fallbackAmount} for your last payment.</p>
 <p>${guidance}</p>
-<p>Vous pouvez mettre à jour vos informations de paiement via le portail de facturation.</p>
-<p>Merci,<br/>L’équipe Studio AI</p>`;
+<p>You can update your payment details via the billing portal.</p>
+<p>Thank you,<br/>The Studio AI team</p>`;
 
   try {
     await sendEmail({
@@ -163,24 +163,24 @@ async function notifySubscriptionCancellation(subscription: Stripe.Subscription)
 
   const endDate = formatDate(subscription.ended_at ?? null);
 
-  const subject = 'Confirmation de résiliation de votre abonnement';
+  const subject = 'Confirmation of your subscription cancellation';
   const text = [
-    'Bonjour,',
+    'Hello,',
     '',
-    'Nous confirmons la résiliation de votre abonnement Studio AI.',
-    endDate ? `L’accès à votre offre se terminera le ${endDate}.` : 'L’accès à votre offre a été immédiatement interrompu.',
+    'We confirm the cancellation of your Studio AI subscription.',
+    endDate ? `Your access will end on ${endDate}.` : 'Your access has been stopped immediately.',
     '',
-    'Nous restons à votre disposition si vous souhaitez revenir ou si vous avez des questions.',
+    'We are available if you have questions or wish to return.',
     '',
-    'Merci,',
-    'L’équipe Studio AI'
+    'Thank you,',
+    'The Studio AI team'
   ].join('\n');
 
-  const html = `<p>Bonjour,</p>
-<p>Nous confirmons la résiliation de votre abonnement Studio AI.</p>
-<p>${endDate ? `L’accès à votre offre se terminera le ${endDate}.` : 'L’accès à votre offre a été immédiatement interrompu.'}</p>
-<p>Nous restons à votre disposition si vous avez des questions ou si vous souhaitez revenir.</p>
-<p>Merci,<br/>L’équipe Studio AI</p>`;
+  const html = `<p>Hello,</p>
+<p>We confirm the cancellation of your Studio AI subscription.</p>
+<p>${endDate ? `Your access will end on ${endDate}.` : 'Your access has been stopped immediately.'}</p>
+<p>We are available if you have questions or would like to come back.</p>
+<p>Thank you,<br/>The Studio AI team</p>`;
 
   try {
     await sendEmail({
@@ -393,7 +393,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
       const periodStart = formatDate(period?.start ?? null);
       const periodEnd = formatDate(period?.end ?? null);
       const quotaLimit = resolveQuotaLimit(priceId);
-      const subject = 'Votre récapitulatif d’abonnement Studio AI';
+      const subject = 'Your Studio AI subscription summary';
       const amountText =
         amountPaid ??
         (invoice.total !== null && invoice.total !== undefined
@@ -401,35 +401,35 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
           : 'Montant non disponible');
 
       const lines = [
-        'Bonjour,',
+        'Hello,',
         '',
-        'Voici le récapitulatif de votre renouvellement d’abonnement Studio AI :',
-        `• Plan : ${planDetails.label}`,
-        `• Montant facturé : ${amountText}`,
-        periodStart && periodEnd ? `• Période : du ${periodStart} au ${periodEnd}` : null,
-        `• Quota disponible : ${quotaLimit} générations pour ce cycle`,
+        'Here is the summary for your Studio AI subscription renewal:',
+        `• Plan: ${planDetails.label}`,
+        `• Amount charged: ${amountText}`,
+        periodStart && periodEnd ? `• Period: ${periodStart} to ${periodEnd}` : null,
+        `• Available quota: ${quotaLimit} generations for this cycle`,
         '',
-        'Vous pouvez gérer votre abonnement et mettre à niveau votre offre depuis le tableau de bord.',
+        'You can manage or upgrade your subscription from the dashboard.',
         '',
-        'Merci pour votre confiance,',
-        'L’équipe Studio AI'
+        'Thank you for your trust,',
+        'The Studio AI team'
       ].filter(Boolean) as string[];
 
       const text = lines.join('\n');
-      const html = `<p>Bonjour,</p>
-<p>Voici le récapitulatif de votre renouvellement d’abonnement Studio AI :</p>
+      const html = `<p>Hello,</p>
+<p>Here is the summary for your Studio AI subscription renewal:</p>
 <ul>
-  <li><strong>Plan :</strong> ${planDetails.label}</li>
-  <li><strong>Montant facturé :</strong> ${amountText}</li>
+  <li><strong>Plan:</strong> ${planDetails.label}</li>
+  <li><strong>Amount charged:</strong> ${amountText}</li>
   ${
     periodStart && periodEnd
-      ? `<li><strong>Période :</strong> du ${periodStart} au ${periodEnd}</li>`
+      ? `<li><strong>Period:</strong> ${periodStart} to ${periodEnd}</li>`
       : ''
   }
-  <li><strong>Quota disponible :</strong> ${quotaLimit} générations pour ce cycle</li>
+  <li><strong>Available quota:</strong> ${quotaLimit} generations for this cycle</li>
 </ul>
-<p>Vous pouvez gérer votre abonnement et mettre à niveau votre offre depuis le tableau de bord.</p>
-<p>Merci pour votre confiance,<br/>L’équipe Studio AI</p>`;
+<p>You can manage or upgrade your subscription from the dashboard.</p>
+<p>Thank you for your trust,<br/>The Studio AI team</p>`;
 
       try {
         await sendEmail({

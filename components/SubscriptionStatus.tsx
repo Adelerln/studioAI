@@ -30,17 +30,17 @@ export function SubscriptionStatus({
   const usagePercent = quotaLimit > 0 ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
   const isActive = ACTIVE_STATUSES.has(status ?? '');
   const badgeLabel = loading
-    ? 'Chargement…'
+    ? 'Loading…'
     : isActive
     ? status === 'trialing'
-      ? 'Essai'
-      : 'Actif'
-    : 'Gratuit';
+      ? 'Trial'
+      : 'Active'
+    : 'Free';
 
   return (
     <div style={styles.card}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Mon abonnement</h2>
+        <h2 style={styles.title}>My subscription</h2>
         <span
           style={{
             ...styles.badge,
@@ -55,15 +55,15 @@ export function SubscriptionStatus({
       {error ? (
         <p style={{ ...styles.text, color: '#b91c1c' }}>{error}</p>
       ) : loading ? (
-        <p style={styles.text}>Chargement de votre abonnement…</p>
+        <p style={styles.text}>Loading your subscription…</p>
       ) : (
         <>
           <p style={styles.text}>
             {plan.label} · {plan.priceLabel}
           </p>
           <p style={styles.quota}>
-            {planKey === 'free' ? 'Plan Free' : `Plan ${plan.label}`} - {remaining}/{quotaLimit} générations restantes
-            ce mois
+            {planKey === 'free' ? 'Free plan' : `Plan ${plan.label}`} - {remaining}/{quotaLimit} generations left this
+            month
           </p>
           <div style={styles.track}>
             <div
@@ -83,7 +83,7 @@ export function SubscriptionStatus({
           onClick={onManage}
           disabled={manageDisabled}
         >
-          {manageDisabled ? 'Ouverture…' : 'Gérer mon abonnement'}
+          {manageDisabled ? 'Opening…' : 'Manage my subscription'}
         </button>
       )}
     </div>

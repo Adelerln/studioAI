@@ -20,7 +20,7 @@ export async function POST(_request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
     await ensureSubscriptionRow(user.id, {
@@ -33,9 +33,8 @@ export async function POST(_request: NextRequest) {
   } catch (error) {
     console.error('[subscriptions.ensure] error', error);
     return NextResponse.json(
-      { message: 'Impossible de préparer le plan gratuit.' },
+      { message: 'Unable to prepare the free plan.' },
       { status: 500 }
     );
   }
 }
-

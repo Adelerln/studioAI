@@ -24,7 +24,7 @@ interface FetchState {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency.toUpperCase()
   }).format(amount / 100);
@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
         });
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}));
-          throw new Error(payload?.message ?? 'Impossible de charger les analytics.');
+          throw new Error(payload?.message ?? 'Unable to load analytics.');
         }
         const payload: AnalyticsPayload = await response.json();
         setState({ loading: false, error: null, data: payload });
@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
           error:
             error instanceof Error
               ? error.message
-              : 'Impossible de charger les analytics.',
+              : 'Unable to load analytics.',
           data: null
         });
       }
@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
     return (
       <section style={styles.wrapper}>
         <div style={styles.card}>
-          <p style={styles.muted}>Vérification des autorisations administrateur…</p>
+          <p style={styles.muted}>Verifying admin permissions…</p>
         </div>
       </section>
     );
@@ -105,33 +105,33 @@ export default function AdminDashboardPage() {
       <div style={styles.card}>
         <div style={styles.header}>
           <div>
-            <h1 style={styles.title}>Analytics - Tableau de bord admin</h1>
+            <h1 style={styles.title}>Analytics - Admin dashboard</h1>
             <p style={styles.subtitle}>
-              Surveillez les performances financières et l’engagement des utilisateurs.
+              Track financial performance and user engagement.
             </p>
           </div>
         </div>
 
         {state.loading ? (
-          <p style={styles.muted}>Chargement des analytics…</p>
+          <p style={styles.muted}>Loading analytics…</p>
         ) : state.error ? (
           <p style={styles.error}>{state.error}</p>
         ) : state.data ? (
           <div style={styles.grid}>
             <MetricCard
-              label="Revenu total (mois en cours)"
+              label="Total revenue (current month)"
               value={formatCurrency(
                 state.data.revenue.amount,
                 state.data.revenue.currency
               )}
             />
-            <MetricCard label="Nombre de paiements" value={state.data.paymentsCount.toString()} />
+            <MetricCard label="Number of payments" value={state.data.paymentsCount.toString()} />
             <MetricCard
-              label="Abonnements actifs"
+              label="Active subscriptions"
               value={state.data.activeSubscriptions.toString()}
             />
             <MetricCard
-              label="Taux de conversion"
+              label="Conversion rate"
               value={
                 state.data.conversionRate !== null
                   ? formatPercentage(state.data.conversionRate)
@@ -139,13 +139,13 @@ export default function AdminDashboardPage() {
               }
               helper={
                 state.data.visitorsCount === null
-                  ? 'Aucune donnée de visiteurs disponible.'
-                  : `Visiteurs : ${state.data.visitorsCount}`
+                  ? 'No visitor data available.'
+                  : `Visitors: ${state.data.visitorsCount}`
               }
             />
           </div>
         ) : (
-          <p style={styles.muted}>Aucune donnée disponible.</p>
+          <p style={styles.muted}>No data available.</p>
         )}
       </div>
     </section>

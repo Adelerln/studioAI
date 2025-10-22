@@ -8,19 +8,19 @@ import { STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID, PLAN_DETAILS } from '@/cons
 
 const FEATURES = {
   free: [
-    '5 générations par mois',
-    'Accès aux modèles standards',
-    'Historique de vos créations'
+    '5 generations per month',
+    'Access to standard models',
+    'History of your creations'
   ],
   [STRIPE_BASIC_PRICE_ID]: [
-    '50 générations par mois',
-    'Accès aux modèles standards',
-    'Support email prioritaire sous 24h'
+    '50 generations per month',
+    'Access to standard models',
+    'Priority email support within 24h'
   ],
   [STRIPE_PRO_PRICE_ID]: [
-    '200 générations par mois',
-    'Accès aux modèles premium',
-    'Support prioritaire & roadmap privée'
+    '200 generations per month',
+    'Access to premium models',
+    'Priority support & private roadmap'
   ]
 };
 
@@ -67,11 +67,11 @@ export default function PricingPage() {
         const payload = (await response.json().catch(() => ({}))) as { url?: string; message?: string };
 
         if (!response.ok) {
-          throw new Error(payload?.message ?? 'Impossible de démarrer le paiement.');
+          throw new Error(payload?.message ?? 'Unable to start the payment.');
         }
 
         if (!payload?.url) {
-          throw new Error('Lien de redirection manquant.');
+          throw new Error('Missing redirect link.');
         }
 
         window.location.assign(payload.url);
@@ -80,7 +80,7 @@ export default function PricingPage() {
         setError(
           checkoutError instanceof Error
             ? checkoutError.message
-            : 'Une erreur est survenue lors de la création de la session Stripe.'
+            : 'An error occurred while creating the Stripe session.'
         );
       } finally {
         setPendingPlan(null);
@@ -92,14 +92,13 @@ export default function PricingPage() {
   return (
     <main style={styles.page}>
       <section style={styles.hero}>
-        <h1 style={styles.title}>Choisissez le plan qui correspond à votre studio</h1>
+        <h1 style={styles.title}>Choose the plan that fits your studio</h1>
         <p style={styles.subtitle}>
-          Passez à un plan supérieur pour augmenter votre quota de générations et accéder aux fonctionnalités
-          avancées.
+          Upgrade to unlock more generations and advanced capabilities tailored to your workflow.
         </p>
         {!authLoading && !user && (
           <button type="button" style={styles.loginButton} onClick={() => router.push('/login?redirect=/pricing')}>
-            Se connecter pour s’abonner
+            Log in to subscribe
           </button>
         )}
         {error && <p style={styles.error}>{error}</p>}
@@ -107,12 +106,12 @@ export default function PricingPage() {
 
       <section style={styles.grid}>
         <PricingCard
-          title="Plan Free"
+          title="Free plan"
           price={PLAN_DETAILS.free.priceLabel}
           description={PLAN_DETAILS.free.description}
           quota={PLAN_DETAILS.free.quota}
           features={FEATURES.free}
-          ctaLabel={user ? 'Inclus dans votre compte' : 'Créer un compte gratuit'}
+          ctaLabel={user ? 'Included with your account' : 'Create a free account'}
           onSubscribe={() =>
             user ? router.push('/dashboard') : router.push('/signup?redirect=/dashboard')
           }
@@ -126,7 +125,7 @@ export default function PricingPage() {
             description={plan.description}
             quota={plan.quota}
             features={FEATURES[id]}
-            ctaLabel="S’abonner"
+            ctaLabel="Subscribe"
             onSubscribe={() => handleSubscribe(id)}
             loading={pendingPlan === id}
             disabled={authLoading}

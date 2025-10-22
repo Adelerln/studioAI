@@ -20,24 +20,37 @@ export async function GET(_request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
-    const code = await ensureReferralCodeForUser(user.id);
-    const supabaseAdmin = createSupabaseAdminClient();
-    const { data: adminUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
-    const metadata = (adminUser?.user?.user_metadata ?? {}) as Record<string, unknown>;
-    const credits = Number(metadata.referral_credits ?? 0) || 0;
-    const referredBy = typeof metadata.referred_by === 'string' ? metadata.referred_by : null;
+    let code: string | null = null;
+    let credits = 0;
+    let referredBy: string | null = null;
+
+    try {
+      code = await ensureReferralCodeForUser(user.id);
+    } catch (ensureError) {
+      console.warn('[referral.code] ensureReferralCodeForUser failed, using fallback code', ensureError);
+      code = user.id.replace(/-/g, '').slice(0, 10).toUpperCase();
+    }
+
+    try {
+      const supabaseAdmin = createSupabaseAdminClient();
+      const { data: adminUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
+      const metadata = (adminUser?.user?.user_metadata ?? {}) as Record<string, unknown>;
+      credits = Number(metadata.referral_credits ?? 0) || 0;
+      referredBy = typeof metadata.referred_by === 'string' ? metadata.referred_by : null;
+    } catch (adminError) {
+      console.warn('[referral.code] unable to load referral metadata, defaulting to zero credits', adminError);
+    }
 
     return NextResponse.json({
-      code,
+      code: code ?? null,
       credits,
       referredBy
     });
   } catch (apiError) {
     console.error('[referral.code] error', apiError);
-    return NextResponse.json({ message: 'Impossible de récupérer votre code de parrainage.' }, { status: 500 });
+    return NextResponse.json({ message: 'Unable to retrieve your referral information.' }, { status: 500 });
   }
 }
-

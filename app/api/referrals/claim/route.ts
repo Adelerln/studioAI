@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const code = normaliseCode(payload.code);
 
     if (!code) {
-      return NextResponse.json({ message: 'Code de parrainage manquant.' }, { status: 400 });
+      return NextResponse.json({ message: 'Referral code is required.' }, { status: 400 });
     }
 
     const supabase = createRouteHandlerClient({ cookies });
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
     const supabaseAdmin = createSupabaseAdminClient();
@@ -50,21 +50,21 @@ export async function POST(request: NextRequest) {
     const currentMetadata = (currentUserData?.user?.user_metadata ?? {}) as Record<string, unknown>;
 
     if (typeof currentMetadata.referral_reward_claimed === 'boolean' && currentMetadata.referral_reward_claimed) {
-      return NextResponse.json({ message: 'Récompense déjà appliquée.' });
+      return NextResponse.json({ message: 'Reward already applied.' });
     }
 
     if (typeof currentMetadata.referred_by === 'string' && currentMetadata.referred_by.length > 0) {
-      return NextResponse.json({ message: 'Récompense déjà appliquée.' });
+      return NextResponse.json({ message: 'Reward already applied.' });
     }
 
     const referrerId = await findReferrerByCode(code);
 
     if (!referrerId) {
-      return NextResponse.json({ message: 'Code de parrainage invalide.' }, { status: 404 });
+      return NextResponse.json({ message: 'Invalid referral code.' }, { status: 404 });
     }
 
     if (referrerId === user.id) {
-      return NextResponse.json({ message: 'Vous ne pouvez pas utiliser votre propre code.' }, { status: 400 });
+      return NextResponse.json({ message: 'You cannot use your own code.' }, { status: 400 });
     }
 
     await ensureSubscriptionRow(user.id, {
@@ -105,15 +105,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: 'Récompense appliquée !',
+      message: 'Reward applied!',
       reward: REFERRAL_REWARD_BONUS
     });
   } catch (apiError) {
     console.error('[referral.claim] error', apiError);
     return NextResponse.json(
-      { message: 'Impossible de traiter la récompense de parrainage.' },
+      { message: 'Unable to process the referral reward.' },
       { status: 500 }
     );
   }
 }
-

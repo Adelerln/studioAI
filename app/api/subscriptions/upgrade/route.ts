@@ -30,7 +30,7 @@ export async function POST(_request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json({ message: 'Authentification requise.' }, { status: 401 });
+      return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
     }
 
     const { data: subscription, error: subscriptionError } = await fetchSubscriptionForUser(user.id);
@@ -41,13 +41,13 @@ export async function POST(_request: NextRequest) {
 
     if (!subscription || !subscription.stripe_subscription_id) {
       return NextResponse.json(
-        { message: 'Aucun abonnement actif trouvé. Souscrivez d’abord à une offre.' },
+        { message: 'No active subscription found. Please subscribe to a plan first.' },
         { status: 400 }
       );
     }
 
     if (subscription.stripe_price_id === proPriceId) {
-      return NextResponse.json({ message: 'Vous êtes déjà sur le plan Pro.' });
+      return NextResponse.json({ message: 'You are already on the Pro plan.' });
     }
 
     const stripe = getStripeClient();
@@ -62,7 +62,7 @@ export async function POST(_request: NextRequest) {
     const subscriptionItem = stripeSubscription.items.data[0];
 
     if (!subscriptionItem) {
-      throw new Error('Impossible de trouver le produit associé à votre abonnement Stripe.');
+      throw new Error('Unable to find the Stripe subscription item for your account.');
     }
 
     await stripe.subscriptions.update(subscription.stripe_subscription_id, {
@@ -85,7 +85,7 @@ export async function POST(_request: NextRequest) {
       quota_limit: resolveQuotaLimit(proPriceId)
     });
 
-    return NextResponse.json({ message: 'Votre abonnement est en cours de mise à niveau vers le plan Pro.' });
+    return NextResponse.json({ message: 'Your subscription is being upgraded to the Pro plan.' });
   } catch (error) {
     console.error('[subscriptions.upgrade] error', error);
     const message =
@@ -93,7 +93,7 @@ export async function POST(_request: NextRequest) {
         ? error.message
         : error instanceof Error
         ? error.message
-        : 'Impossible de mettre à niveau votre abonnement.';
+        : 'Unable to upgrade your subscription.';
     return NextResponse.json({ message }, { status: 500 });
   }
 }

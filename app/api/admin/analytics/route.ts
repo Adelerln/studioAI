@@ -99,7 +99,7 @@ export async function GET(_request: NextRequest) {
     }
 
     if (!user || !isAdminUser(user)) {
-      return NextResponse.json({ message: 'Non autorisé.' }, { status: 403 });
+      return NextResponse.json({ message: 'Unauthorized.' }, { status: 403 });
     }
 
     const stripe = getStripeClient();
@@ -134,9 +134,8 @@ export async function GET(_request: NextRequest) {
   } catch (error) {
     console.error('[admin.analytics] handler error', error);
     return NextResponse.json(
-      { message: 'Impossible de récupérer les analytics.' },
+      { message: 'Unable to retrieve analytics.' },
       { status: 500 }
     );
   }
 }
-

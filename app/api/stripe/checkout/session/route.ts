@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         : undefined);
 
     if (metadataUserId && metadataUserId !== user.id) {
-      throw new Error('Cette session ne correspond pas à votre compte.');
+      throw new Error('This session does not belong to your account.');
     }
 
     const subscriptionId =

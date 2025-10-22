@@ -32,7 +32,7 @@ export function PricingCard({
       </header>
 
       <p style={styles.quota}>
-        {quota} générations / mois
+        {quota} generations / month
       </p>
 
       <ul style={styles.featureList}>
@@ -55,7 +55,7 @@ export function PricingCard({
         onClick={onSubscribe}
         disabled={disabled || loading}
       >
-        {loading ? 'Redirection…' : ctaLabel}
+        {loading ? 'Redirecting…' : ctaLabel}
       </button>
     </article>
   );

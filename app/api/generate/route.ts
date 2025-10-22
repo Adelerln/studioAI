@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             message:
-              'Vous avez atteint votre quota de générations pour ce cycle. Passez au plan Basic pour augmenter votre limite.'
+              'You have reached your generation quota for this cycle. Upgrade to the Basic plan to increase your limit.'
           },
           { status: 402 }
         );

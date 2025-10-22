@@ -15,14 +15,14 @@ interface PaymentRecord {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency.toUpperCase()
   }).format(amount / 100);
 }
 
 function formatDate(timestamp: number) {
-  return new Date(timestamp * 1000).toLocaleString('fr-FR', {
+  return new Date(timestamp * 1000).toLocaleString('en-US', {
     year: 'numeric',
     month: 'long',
     day: '2-digit',
@@ -56,13 +56,13 @@ export default function BillingPage() {
         const response = await fetch('/api/billing/history');
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}));
-          throw new Error(payload?.message ?? 'Impossible de récupérer votre historique de paiements.');
+          throw new Error(payload?.message ?? 'Unable to retrieve your payment history.');
         }
         const payload = await response.json();
         setPayments(payload?.payments ?? []);
       } catch (err) {
         console.error('[billing] fetch error', err);
-        setError(err instanceof Error ? err.message : 'Impossible de récupérer votre historique de paiements.');
+        setError(err instanceof Error ? err.message : 'Unable to retrieve your payment history.');
       } finally {
         setLoadingPayments(false);
       }
@@ -75,7 +75,7 @@ export default function BillingPage() {
     return (
       <section style={styles.page}>
         <div style={styles.card}>
-          <p style={styles.muted}>Chargement de votre compte…</p>
+          <p style={styles.muted}>Loading your account…</p>
         </div>
       </section>
     );
@@ -84,24 +84,24 @@ export default function BillingPage() {
   return (
     <section style={styles.page}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Historique des paiements</h1>
-        <p style={styles.subtitle}>Consultez vos transactions récentes et téléchargez les reçus PDF.</p>
+        <h1 style={styles.title}>Payment History</h1>
+        <p style={styles.subtitle}>Review your recent transactions and download PDF receipts.</p>
 
         {loadingPayments ? (
-          <p style={styles.muted}>Chargement de votre historique…</p>
+          <p style={styles.muted}>Loading your history…</p>
         ) : error ? (
           <p style={styles.error}>{error}</p>
         ) : payments.length === 0 ? (
-          <p style={styles.muted}>Aucun paiement n’a encore été enregistré pour votre compte.</p>
+          <p style={styles.muted}>No payments have been recorded for your account yet.</p>
         ) : (
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead>
                 <tr>
                   <th style={styles.th}>Date</th>
-                  <th style={styles.th}>Montant</th>
-                  <th style={styles.th}>Statut</th>
-                  <th style={styles.th}>Facture PDF</th>
+                  <th style={styles.th}>Amount</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>PDF Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,10 +117,10 @@ export default function BillingPage() {
                     <td style={styles.td}>
                       {payment.receipt_url ? (
                         <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer" style={styles.link}>
-                          Télécharger
+                          Download
                         </a>
                       ) : (
-                        <span style={styles.muted}>Non disponible</span>
+                        <span style={styles.muted}>Not available</span>
                       )}
                     </td>
                   </tr>
@@ -137,15 +137,15 @@ export default function BillingPage() {
 function translateStatus(status: string) {
   switch (status) {
     case 'succeeded':
-      return 'Réussi';
+      return 'Succeeded';
     case 'processing':
-      return 'En cours';
+      return 'Processing';
     case 'requires_payment_method':
-      return 'Paiement requis';
+      return 'Payment required';
     case 'requires_action':
-      return 'Action requise';
+      return 'Action required';
     case 'canceled':
-      return 'Annulé';
+      return 'Canceled';
     default:
       return status;
   }

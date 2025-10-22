@@ -37,7 +37,7 @@ export function Header() {
 
       <nav style={styles.nav}>
         <Link href="/dashboard" style={styles.navLink}>
-          Accès au studio
+          Studio access
         </Link>
         {showMarketingNav && (
           <div style={styles.primaryLinks}>
@@ -70,10 +70,10 @@ export function Header() {
           showAuthLinks && (
             <div style={styles.links}>
               <Link href="/login" style={styles.navLink}>
-                log in
+                Log in
               </Link>
               <Link href="/signup" style={styles.navLink}>
-                sign up
+                Sign up
               </Link>
             </div>
           )

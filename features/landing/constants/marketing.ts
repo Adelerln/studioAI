@@ -15,7 +15,7 @@ interface HeroContent {
 
 export const heroContent: HeroContent = {
   eyebrow: 'Studio AI',
-  title: 'Reimagine your team’s visual production',
+  title: "Reimagine your team's visual production",
   subtitle:
     'Prototype, validate, and deploy AI-powered visual experiences in minutes. Connect your data, orchestrate the best models, and ship results that meet creative direction standards.',
   secondaryCta: { label: 'Voir les offres', href: '/pricing' },

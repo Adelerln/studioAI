@@ -30,20 +30,20 @@ export const PLAN_DETAILS: Record<
 > = {
   free: {
     label: 'Free',
-    priceLabel: 'Gratuit',
-    description: '5 générations par mois pour découvrir le studio.',
+    priceLabel: 'Free',
+    description: '5 generations per month to explore the studio.',
     quota: FREE_TIER_QUOTA
   },
   [STRIPE_BASIC_PRICE_ID]: {
     label: 'Basic',
-    priceLabel: '9€ / mois',
-    description: '50 générations par mois pour vos projets réguliers.',
+    priceLabel: '€9 / month',
+    description: '50 generations per month for your regular projects.',
     quota: STRIPE_PLAN_QUOTAS[STRIPE_BASIC_PRICE_ID]
   },
   [STRIPE_PRO_PRICE_ID]: {
     label: 'Pro',
-    priceLabel: '19€ / mois',
-    description: '200 générations par mois pour les créateurs intensifs.',
+    priceLabel: '€19 / month',
+    description: '200 generations per month for heavy creators.',
     quota: STRIPE_PLAN_QUOTAS[STRIPE_PRO_PRICE_ID]
   }
 };
