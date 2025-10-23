@@ -27,6 +27,37 @@ const replicateModel = (process.env.REPLICATE_MODEL ?? 'google/nano-banana') as
   | `${string}/${string}`
   | `${string}/${string}:${string}`;
 
+const DEFAULT_STORAGE_BASE_NAME = 'image';
+const DEFAULT_STORAGE_EXTENSION = 'png';
+
+/**
+ * Supabase storage keys must avoid certain unicode characters, so normalise the
+ * incoming file name while keeping a sensible extension.
+ */
+function createStorageSafeFileName(file: File): string {
+  const inputName = file.name?.trim() ?? '';
+  const dotIndex = inputName.lastIndexOf('.');
+  const baseName = dotIndex > 0 ? inputName.slice(0, dotIndex) : inputName;
+  const extensionFromName = dotIndex > 0 ? inputName.slice(dotIndex + 1) : '';
+
+  const normalisedBase = baseName
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
+
+  const rawExtension =
+    extensionFromName.toLowerCase() ||
+    file.type?.replace(/^image\//, '')?.split('+', 1)[0]?.toLowerCase() ||
+    DEFAULT_STORAGE_EXTENSION;
+  const extension = rawExtension.replace(/[^a-z0-9]/g, '') || DEFAULT_STORAGE_EXTENSION;
+
+  const safeBase = normalisedBase || DEFAULT_STORAGE_BASE_NAME;
+  return `${safeBase}.${extension || DEFAULT_STORAGE_EXTENSION}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
@@ -58,7 +89,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Prompt is required.' }, { status: 400 });
     }
 
-    const inputPath = `uploads/${randomUUID()}-${image.name}`;
+    const inputPath = `uploads/${randomUUID()}-${createStorageSafeFileName(image)}`;
     const imageBuffer = Buffer.from(await image.arrayBuffer());
 
     const { error: uploadInputError } = await supabaseAdmin.storage
